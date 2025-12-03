@@ -1,3 +1,4 @@
+package comun;
 import java.io.Serializable;
 
 public class Mensaje implements Serializable {
