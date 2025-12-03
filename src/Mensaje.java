@@ -12,4 +12,9 @@ public class Mensaje implements Serializable {
         this.tipo = tipo;
         this.contenido = contenido;
     }
+
+    @Override
+    public String toString() {
+        return "Mensaje{" + "tipo='" + tipo + '\'' + ", contenido=" + contenido + '}';
+    }
 }
