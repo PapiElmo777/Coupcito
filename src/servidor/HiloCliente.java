@@ -1,5 +1,6 @@
 package servidor;
 
+import comun.Constantes;
 import comun.Mensaje;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -27,11 +28,26 @@ public String getNombreJugador() {
             salida = new ObjectOutputStream(socket.getOutputStream());
             salida.flush();
             entrada = new ObjectInputStream(socket.getInputStream());
-            while (true) {
-                Mensaje msjRecibido = (Mensaje) entrada.readObject();
+          while (true) {
+    Mensaje msjRecibido = (Mensaje) entrada.readObject();
 
-                System.out.println("Recibido de " + socket.getInetAddress() + ": " + msjRecibido.tipo);
-            }
+    if (msjRecibido.tipo.equals(Constantes.TIPO_LOGIN)) {
+      
+        this.nombreJugador = (String) msjRecibido.contenido;
+        
+     
+        enviarMensaje(new Mensaje(Constantes.TIPO_ESTADO, "Conectado como " + nombreJugador));
+
+       
+        ServidorCoup.enviarATodos(new Mensaje(Constantes.TIPO_MENSAJE, ">> " + nombreJugador + " se ha unido a la sala."));
+        
+        System.out.println("Login procesado para: " + nombreJugador);
+    } 
+    else {
+   
+        System.out.println("Mensaje recibido: " + msjRecibido.tipo);
+    }
+}
 
         } catch (Exception e) {
             System.out.println(">> Cliente desconectado.");
