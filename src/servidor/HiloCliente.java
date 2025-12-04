@@ -8,6 +8,10 @@ import java.net.Socket;
 
 public class HiloCliente extends Thread {
 
+
+public String getNombreJugador() { 
+    return nombreJugador;
+}
     private Socket socket;
     private ObjectOutputStream salida;
     private ObjectInputStream entrada;
