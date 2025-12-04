@@ -1,11 +1,20 @@
 package servidor;
 
 import comun.Constantes;
+import comun.Mensaje;
+
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
 public class ServidorCoup {
+    
+public static void enviarATodos(Mensaje msj) {
+    for (HiloCliente cliente : clientesConectados) {
+      
+        cliente.enviarMensaje(msj);
+    }
+}
     public static ArrayList<HiloCliente> clientesConectados = new ArrayList<>();
     public static void main(String[] args) {
         System.out.println(">> Iniciando Servidor Coup Shavalon...");
