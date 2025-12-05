@@ -18,6 +18,7 @@ public static void enviarATodos(Mensaje msj) {
     public static ArrayList<HiloCliente> clientesConectados = new ArrayList<>();
     public static void main(String[] args) {
         System.out.println(">> Iniciando Servidor Coup Shavalon...");
+        BaseDatos.conectar();
         try (ServerSocket serverSocket = new ServerSocket(Constantes.PUERTO)) {
             System.out.println(">> Servidor esperando jugadores en puerto: " + Constantes.PUERTO);
 
