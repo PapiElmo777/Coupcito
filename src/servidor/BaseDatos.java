@@ -26,4 +26,15 @@ public class BaseDatos {
             stmt.execute(sql);
         }
     }
+    public static synchronized boolean registrarUsuario(String usuario, String password) {
+        String sql = "INSERT INTO usuarios(nombre, password) VALUES(?,?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, usuario);
+            pstmt.setString(2, password);
+            pstmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
 }
