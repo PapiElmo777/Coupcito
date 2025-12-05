@@ -4,11 +4,11 @@ public class Constantes {
     public static final int PUERTO = 8080;
 
     // Tipos de Mensajes
-    public static final String TIPO_LOGIN = "LOGIN";         // del cliente al Servidor
-    public static final String TIPO_MENSAJE = "TEXTO";       // mensajes de sistema o chat
-    public static final String TIPO_ESTADO = "ESTADO";       // del servidor al cliente
-    public static final String TIPO_ACCION = "ACCION";       // del cliente al servidor
-    public static final String TIPO_TURNO = "TURNO";         // del servidor  cliente
+    public static final String LOGIN = "LOGIN";         // del cliente al Servidor
+    public static final String MENSAJE = "TEXTO";       // mensajes de sistema o chat
+    public static final String ESTADO = "ESTADO";       // del servidor al cliente
+    public static final String ACCION = "ACCION";       // del cliente al servidor
+    public static final String TURNO = "TURNO";         // del servidor  cliente
 
     // Roles del Juego
     public static final String DUQUE = "Duque";
