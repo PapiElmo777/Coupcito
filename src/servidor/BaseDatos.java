@@ -37,4 +37,17 @@ public class BaseDatos {
             return false;
         }
     }
+    public static boolean validarLogin(String usuario, String password) {
+        String sql = "SELECT password FROM usuarios WHERE nombre = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, usuario);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("password").equals(password);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }
