@@ -5,7 +5,7 @@ public class Constantes {
 
     // Tipos de Mensajes
     public static final String LOGIN = "LOGIN";         // del cliente al Servidor
-    public static final String MENSAJE = "TEXTO";       // mensajes de sistema o chat
+    public static final String TEXTO = "TEXTO";       // mensajes de sistema o chat
     public static final String ESTADO = "ESTADO";       // del servidor al cliente
     public static final String ACCION = "ACCION";       // del cliente al servidor
     public static final String TURNO = "TURNO";         // del servidor  cliente
