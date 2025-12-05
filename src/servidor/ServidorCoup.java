@@ -34,4 +34,9 @@ public static void enviarATodos(Mensaje msj) {
             e.printStackTrace();
         }
     }
+    public static void broadcast(Mensaje msj) {
+        for (HiloCliente cliente : clientesConectados) {
+            cliente.enviarMensaje(msj);
+        }
+    }
 }
