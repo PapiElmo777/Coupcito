@@ -37,5 +37,20 @@ public class Sala implements Serializable {
         return false;
     }
 
-    
+    public void removerJugador(HiloCliente jugador) {
+        if (jugadores != null) {
+            jugadores.remove(jugador);
+        }
+    }
+
+   
+    public int getId() { return id; }
+    public boolean isEsPrivada() { return esPrivada; }
+    public boolean isEnJuego() { return enJuego; }
+    public List<HiloCliente> getJugadores() { return jugadores; }
+
+    @Override
+    public String toString() {
+        return "Sala #" + id + " de " + nombreAdmin + " [" + (jugadores != null ? jugadores.size() : 0) + "/" + capacidadMaxima + "]";
+    }
 }
