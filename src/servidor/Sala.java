@@ -15,5 +15,18 @@ public class Sala implements Serializable {
     private String nombreAdmin;
 
    
+    private transient List<HiloCliente> jugadores; 
+
+    // --- ESTE ES EL CONSTRUCTOR QUE TE FALTABA ---
+    public Sala(HiloCliente creador, int capacidad, boolean privada) {
+        this.id = contadorIds++;
+        this.capacidadMaxima = capacidad;
+        this.esPrivada = privada;
+        this.nombreAdmin = creador.getNombreJugador();
+        this.jugadores = new ArrayList<>();
+        this.jugadores.add(creador); 
+        this.enJuego = false;
+    }
+
    
 }
