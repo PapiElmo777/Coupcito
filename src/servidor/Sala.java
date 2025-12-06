@@ -17,7 +17,7 @@ public class Sala implements Serializable {
    
     private transient List<HiloCliente> jugadores; 
 
-    // --- ESTE ES EL CONSTRUCTOR QUE TE FALTABA ---
+    
     public Sala(HiloCliente creador, int capacidad, boolean privada) {
         this.id = contadorIds++;
         this.capacidadMaxima = capacidad;
@@ -29,4 +29,13 @@ public class Sala implements Serializable {
     }
 
    
+    public boolean agregarJugador(HiloCliente jugador) {
+        if (jugadores.size() < capacidadMaxima && !enJuego) {
+            jugadores.add(jugador);
+            return true;
+        }
+        return false;
+    }
+
+    
 }
