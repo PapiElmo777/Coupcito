@@ -241,9 +241,15 @@ public class HiloCliente extends Thread {
 
     private void desconectar() {
         try {
+            if (salaActual != null) {
+                salaActual.removerJugador(this);
+                if (salaActual.getJugadores().isEmpty()) {
+                    ServidorCoup.salasActivas.remove(salaActual);
+                }
+            }
             if (autenticado) {
                 ServidorCoup.clientesConectados.remove(this);
-                ServidorCoup.broadcast(new Mensaje(Constantes.TEXTO, ">> " + nombreJugador + " ha salido."));
+                ServidorCoup.broadcast(new Mensaje(Constantes.TEXTO, ">> " + nombreJugador + " se ha desconectado."));
             }
             socket.close();
         } catch (IOException e) {}
