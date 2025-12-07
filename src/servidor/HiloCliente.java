@@ -190,6 +190,17 @@ public class HiloCliente extends Thread {
                 }else{
                     enviarMensaje(new Mensaje(Constantes.ESTADO, "No estas en ninguna sala."));
                 }
+            } else if (comando.equals("/iniciar")){
+                if (salaActual == null) {
+                    enviarMensaje(new Mensaje(Constantes.ESTADO, "No estás en ninguna sala."));
+                    return;
+                }
+                if (salaActual.iniciarPartida(this)) {
+                    salaActual.broadcastSala(new Mensaje(Constantes.ESTADO, "¡LA PARTIDA HA INICIADO!"));
+                    salaActual.broadcastSala(new Mensaje(Constantes.ESTADO, "Repartiendo cartas... (Próximamente)"));
+                } else {
+                    enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes iniciar (No eres admin o faltan jugadores)."));
+                }
             }
 
         } else {
