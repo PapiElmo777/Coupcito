@@ -15,6 +15,7 @@ public static void enviarATodos(Mensaje msj) {
         cliente.enviarMensaje(msj);
     }
 }
+    public static ArrayList<Sala> salasActivas = new ArrayList<>();
     public static ArrayList<HiloCliente> clientesConectados = new ArrayList<>();
     public static void main(String[] args) {
         System.out.println(">> Iniciando Servidor Coup Shavalon...");
@@ -38,5 +39,13 @@ public static void enviarATodos(Mensaje msj) {
         for (HiloCliente cliente : clientesConectados) {
             cliente.enviarMensaje(msj);
         }
+    }
+    public static Sala buscarSala(int id) {
+        for (Sala s : salasActivas) {
+            if (s.getId() == id) {
+                return s;
+            }
+        }
+        return null;
     }
 }
