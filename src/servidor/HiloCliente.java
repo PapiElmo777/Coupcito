@@ -102,6 +102,17 @@ public class HiloCliente extends Thread {
                 enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando invalido. Inicia sesion primero."));
                 return;
             }
+            if (comando.equals("/crear")) {
+                if (salaActual != null) {
+                    enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya estás en una sala. Usa /salir primero."));
+                    return;
+                }
+                Sala nuevaSala = new Sala(this, 6, false);
+                ServidorCoup.salasActivas.add(nuevaSala);
+                this.salaActual = nuevaSala;
+
+                enviarMensaje(new Mensaje(Constantes.ESTADO, "Sala creada exitosamente (ID: " + nuevaSala.getId() + ")"));
+            }
 
         } else {
             enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido."));
