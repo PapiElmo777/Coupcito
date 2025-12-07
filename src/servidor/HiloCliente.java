@@ -112,6 +112,18 @@ public class HiloCliente extends Thread {
                 this.salaActual = nuevaSala;
 
                 enviarMensaje(new Mensaje(Constantes.ESTADO, "Sala creada exitosamente (ID: " + nuevaSala.getId() + ")"));
+            }else if (comando.equals("/salas")) {
+                StringBuilder sb = new StringBuilder("\n--- SALAS DISPONIBLES ---\n");
+                if (ServidorCoup.salasActivas.isEmpty()) {
+                    sb.append("No hay salas activas. Usa /crear para iniciar una.\n");
+                } else {
+                    for (Sala s : ServidorCoup.salasActivas) {
+                        sb.append(s.toString()).append("\n");
+                    }
+                }
+                sb.append("-------------------------");
+                enviarMensaje(new Mensaje(Constantes.ESTADO, sb.toString()));
+
             }
 
         } else {
