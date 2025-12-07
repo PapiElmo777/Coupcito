@@ -14,6 +14,7 @@ public static void enviarATodos(Mensaje msj) {
       
         cliente.enviarMensaje(msj);
     }
+
 }
     public static ArrayList<Sala> salasActivas = new ArrayList<>();
     public static ArrayList<HiloCliente> clientesConectados = new ArrayList<>();
