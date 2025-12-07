@@ -177,7 +177,19 @@ public class HiloCliente extends Thread {
                 } catch (NumberFormatException e) {
                     enviarMensaje(new Mensaje(Constantes.ESTADO, "El ID debe ser un numero."));
                 }
-
+            } else if (comando.equals("/salir")) {
+                if (salaActual != null){
+                    salaActual.broadcastSala(new Mensaje(Constantes.TEXTO, ">> " + nombreJugador + " salio de la sala."));
+                    salaActual.removerJugador(this);
+                    if (salaActual.getJugadores().isEmpty()) {
+                        ServidorCoup.salasActivas.remove(salaActual);
+                        System.out.println("Sala #" + salaActual.getId() + " eliminada por abandono.");
+                    }
+                    salaActual = null;
+                    enviarMensaje(new Mensaje(Constantes.ESTADO, "Has salido al Lobby Principal."));
+                }else{
+                    enviarMensaje(new Mensaje(Constantes.ESTADO, "No estas en ninguna sala."));
+                }
             }
 
         } else {
