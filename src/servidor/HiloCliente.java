@@ -124,6 +124,60 @@ public class HiloCliente extends Thread {
                 sb.append("-------------------------");
                 enviarMensaje(new Mensaje(Constantes.ESTADO, sb.toString()));
 
+            }else if (comando.equals("/unir")) {
+                if (salaActual != null) {
+                    enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya estas en una sala."));
+                    return;
+                }
+                if (partes.length < 2) {
+                    enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /unir <id_sala>"));
+                    return;
+                }
+                try {
+                    int idSala = Integer.parseInt(partes[1]);
+                    Sala s = ServidorCoup.buscarSala(idSala);
+                    if (s != null) {
+                        if (s.agregarJugador(this)) {
+                            this.salaActual = s;
+                            enviarMensaje(new Mensaje(Constantes.ESTADO, "Te has unido a la sala #" + s.getId()));
+                            s.broadcastSala(new Mensaje(Constantes.TEXTO, ">> " + nombreJugador + " se unio a la sala."));
+                        } else {
+                            enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes unirte (Sala llena o en juego)."));
+                        }
+                    } else {
+                        enviarMensaje(new Mensaje(Constantes.ESTADO, "Sala no encontrada."));
+                    }
+                } catch (NumberFormatException e) {
+                    enviarMensaje(new Mensaje(Constantes.ESTADO, "El ID debe ser un número."));
+                }
+
+            }else if (comando.equals("/unir")) {
+                if (salaActual != null) {
+                    enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya estás en una sala."));
+                    return;
+                }
+                if (partes.length < 2) {
+                    enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /unir <id_sala>"));
+                    return;
+                }
+                try {
+                    int idSala = Integer.parseInt(partes[1]);
+                    Sala s = ServidorCoup.buscarSala(idSala);
+                    if (s != null) {
+                        if (s.agregarJugador(this)) {
+                            this.salaActual = s;
+                            enviarMensaje(new Mensaje(Constantes.ESTADO, "Te has unido a la sala #" + s.getId()));
+                            s.broadcastSala(new Mensaje(Constantes.TEXTO, ">> " + nombreJugador + " se unio a la sala."));
+                        } else {
+                            enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes unirte (Sala llena o en juego)."));
+                        }
+                    } else {
+                        enviarMensaje(new Mensaje(Constantes.ESTADO, "Sala no encontrada."));
+                    }
+                } catch (NumberFormatException e) {
+                    enviarMensaje(new Mensaje(Constantes.ESTADO, "El ID debe ser un numero."));
+                }
+
             }
 
         } else {
