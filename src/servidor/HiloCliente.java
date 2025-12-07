@@ -75,7 +75,7 @@ public class HiloCliente extends Thread {
     private void procesarComando(String texto) {
         String[] partes = texto.trim().split("\\s+");
         String comando = partes[0];
-
+    //comandos de acceso
         if (comando.equals("/registrar")) {
             if (autenticado) {
                 enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya has iniciado sesión."));
@@ -89,7 +89,7 @@ public class HiloCliente extends Thread {
 
         } else if (comando.equals("/login")) {
             if (autenticado) {
-                enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya estás dentro."));
+                enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya ests dentro."));
                 return;
             }
             if (partes.length != 4) {
@@ -97,6 +97,11 @@ public class HiloCliente extends Thread {
                 return;
             }
             login(partes[1], partes[2]);
+
+            if (!autenticado) {
+                enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando invalido. Inicia sesion primero."));
+                return;
+            }
 
         } else {
             enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido."));
