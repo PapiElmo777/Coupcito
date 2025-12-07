@@ -15,6 +15,7 @@ public class HiloCliente extends Thread {
     private ObjectInputStream entrada;
     private String nombreJugador = null;
     private boolean autenticado = false;
+    private Sala salaActual = null;
 
     private static final String REGEX_USUARIO = "^[a-zA-Z0-9]{6,12}$";
     private static final String REGEX_PASS = "^[a-zA-Z0-9]{6,12}$";
@@ -52,7 +53,11 @@ public class HiloCliente extends Thread {
                         procesarComando(texto);
                     } else {
                         if (autenticado) {
-                            ServidorCoup.broadcast(new Mensaje(Constantes.TEXTO, nombreJugador + ": " + texto));
+                            if (salaActual != null) {
+                                salaActual.broadcastSala(new Mensaje(Constantes.TEXTO, "[Sala " + salaActual.getId() + "] " + nombreJugador + ": " + texto));
+                            } else {
+                                ServidorCoup.broadcast(new Mensaje(Constantes.TEXTO, "[Lobby] " + nombreJugador + ": " + texto));
+                            }
                         } else {
                             enviarMensaje(new Mensaje(Constantes.ESTADO, "Debes iniciar sesión primero."));
                         }
