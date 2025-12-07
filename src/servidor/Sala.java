@@ -1,5 +1,6 @@
 package servidor;
 
+import comun.Constantes;
 import comun.Mensaje;
 
 import java.io.Serializable;
@@ -50,6 +51,18 @@ public class Sala implements Serializable {
                 j.enviarMensaje(msj);
             }
         }
+    }
+    public boolean iniciarPartida(HiloCliente solicitante) {
+        if (!solicitante.getNombreJugador().equals(nombreAdmin)) {
+            solicitante.enviarMensaje(new Mensaje(Constantes.ESTADO, "Solo el administrador (" + nombreAdmin + ") puede iniciar."));
+            return false;
+        }
+        if (jugadores.size() < 2) {
+            solicitante.enviarMensaje(new Mensaje(Constantes.ESTADO, "Se necesitan minimo 2 jugadores para empezar."));
+            return false;
+        }
+        this.enJuego = true;
+        return true;
     }
 
     //getters
