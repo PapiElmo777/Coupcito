@@ -1,5 +1,7 @@
 package servidor;
 
+import comun.Mensaje;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,8 +44,15 @@ public class Sala implements Serializable {
             jugadores.remove(jugador);
         }
     }
+    public void broadcastSala(Mensaje msj) {
+        if (jugadores != null) {
+            for (HiloCliente j : jugadores) {
+                j.enviarMensaje(msj);
+            }
+        }
+    }
 
-   
+    //getters
     public int getId() { return id; }
     public boolean isEsPrivada() { return esPrivada; }
     public boolean isEnJuego() { return enJuego; }
@@ -51,6 +60,10 @@ public class Sala implements Serializable {
 
     @Override
     public String toString() {
-        return "Sala #" + id + " de " + nombreAdmin + " [" + (jugadores != null ? jugadores.size() : 0) + "/" + capacidadMaxima + "]";
+        String estado = enJuego ? "[EN JUEGO]" : "[ESPERANDO]";
+        String candado = esPrivada ? "Privada" : "Publica";
+        return String.format("Sala #%d %s | Admin: %s | %s (%d/%d)",
+                id, candado, nombreAdmin, estado,
+                (jugadores != null ? jugadores.size() : 0), capacidadMaxima);
     }
 }
