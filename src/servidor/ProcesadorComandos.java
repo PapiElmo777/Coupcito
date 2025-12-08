@@ -82,7 +82,8 @@ public class ProcesadorComandos {
         if (BaseDatos.validarLogin(user, pass)) {
             cliente.setNombreJugador(user);
             cliente.setAutenticado(true);
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Login correcto. Bienvenido."));
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Bienvenido " + user));
+            mostrarMenuPrincipal();
         } else {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Credenciales incorrectas."));
         }
@@ -179,5 +180,15 @@ public class ProcesadorComandos {
         if (sala.iniciarPartida(cliente)) {
             sala.broadcastSala(new Mensaje(Constantes.ESTADO, "La partida ha iniciado."));
         }
+    }
+    private void mostrarMenuPrincipal() {
+        String menu = "\n=== MENÚ ===\n" +
+                "/crear <2-6> [privada]\n" +
+                "/unirse <id_sala>\n" +
+                "/invitar <usuario>\n" +
+                "/lista\n" +
+                "/salir_sala\n" +
+                "/salir";
+        cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, menu));
     }
 }
