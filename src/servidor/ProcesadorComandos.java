@@ -207,6 +207,11 @@ public class ProcesadorComandos {
         cliente.setAutenticado(false);
         cliente.setNombreJugador(null);
         cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Sesion cerrada."));
+        cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
+                "--------------------------------------------------\n" +
+                        " BIENVENIDO A COUP \n" +
+                        " Usa: /registrar o /login para entrar.\n" +
+                        "--------------------------------------------------"));
     }
     private void manejarIniciarPartida() {
         Sala sala = cliente.getSalaActual();
