@@ -63,6 +63,10 @@ public class ProcesadorComandos {
     }
 
     private void manejarRegistro(String[] partes) {
+        if (cliente.isAutenticado()) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya has iniciado sesion. Cierra sesion para registrar otro usuario."));
+            return;
+        }
         if (partes.length != 4) {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /registrar <usuario> <pass> <confirm>"));
             return;
@@ -91,6 +95,10 @@ public class ProcesadorComandos {
         }
     }
     private void manejarLogin(String[] partes) {
+        if (cliente.isAutenticado()) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya has iniciado sesion."));
+            return;
+        }
         if (partes.length < 3) {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /login <usuario> <pass>"));
             return;
