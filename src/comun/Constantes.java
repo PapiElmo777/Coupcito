@@ -10,7 +10,7 @@ public class Constantes {
     public static final String ACCION = "ACCION";       // del cliente al servidor
     public static final String TURNO = "TURNO";         // del servidor  cliente
 
-    // Roles y Acciones (Se mantienen igual que tu versión anterior)
+    // Roles y Acciones
     public static final String DUQUE = "Duque";
     public static final String ASESINO = "Asesino";
     public static final String CAPITAN = "Capitan";
