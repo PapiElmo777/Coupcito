@@ -221,13 +221,32 @@ public class ProcesadorComandos {
     private void mostrarMenuPrincipal() {
         if (cliente.getSalaActual() == null) {
             String menu = "\n=== MENU ===\n" +
-                    "/crear <2-6> [privada]\n" +
+                    "/crear <2-6> [privada-publica]\n" +
                     "/unir <id_sala>\n" +
                     "/lista\n" +
                     "/salir";
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, menu));
         } else {
             StringBuilder sb = new StringBuilder("\n=== MENU SALA ===\n");
+
+            sb.append("--- Jugadores en tu sala ---\n");
+            for (HiloCliente jugador : cliente.getSalaActual().getJugadores()) {
+                sb.append(" > ").append(jugador.getNombreJugador()).append("\n");
+            }
+
+            sb.append("--- Usuarios en Lobby (Disponibles) ---\n");
+            boolean hayGente = false;
+            for (HiloCliente c : ServidorCoup.clientesConectados) {
+                if (c.isAutenticado() && c.getSalaActual() == null) {
+                    sb.append(" * ").append(c.getNombreJugador()).append("\n");
+                    hayGente = true;
+                }
+            }
+            if (!hayGente) {
+                sb.append(" (Nadie en el lobby)\n");
+            }
+            sb.append("---------------------------------------\n");
+
             sb.append("/salir_sala\n");
             sb.append("/iniciar\n");
 
