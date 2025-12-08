@@ -139,6 +139,14 @@ public class HiloCliente extends Thread {
     public void setSalaActual(Sala salaActual) {
         this.salaActual = salaActual;
     }
-
+    public int getMonedas() {
+        return monedas;
+    }
+    public List<String> getCartasEnMano() {
+        return cartasEnMano;
+    }
+    public boolean isEstaVivo() {
+        return estaVivo;
+    }
 
 }
