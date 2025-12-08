@@ -209,7 +209,7 @@ public class ProcesadorComandos {
         cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Sesion cerrada."));
         cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
                 "--------------------------------------------------\n" +
-                        " BIENVENIDO A COUP \n" +
+                        " BIENVENIDO A COUPCITO \n" +
                         " Usa: /registrar o /login para entrar.\n" +
                         "--------------------------------------------------"));
     }
