@@ -30,11 +30,14 @@ public class ProcesadorComandos {
             case "/unir":
                 manejarUnirse(partes);
                 break;
-            case "/salas":
+            case "/lista":
                 manejarListarSalas();
                 break;
             case "/salir":
-                manejarSalirSala();
+                manejarSalir();
+                break;
+            case "/salir_sala":
+                manejarSalirDeSalaAlLobby();
                 break;
             case "/iniciar":
                 manejarIniciarPartida();
@@ -43,6 +46,22 @@ public class ProcesadorComandos {
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido."));
         }
     }
+
+    private void manejarSalirDeSalaAlLobby() {
+        Sala sala = cliente.getSalaActual();
+        if (sala != null) {
+            sala.removerJugador(cliente);
+            if (sala.getJugadores().isEmpty()) {
+                GestorSalas.getInstancia().eliminarSala(sala);
+            }
+            cliente.setSalaActual(null);
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Has salido de la sala."));
+            mostrarMenuPrincipal();
+        } else {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No estas en ninguna sala."));
+        }
+    }
+
     private void manejarRegistro(String[] partes) {
         if (partes.length != 4) {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /registrar <usuario> <pass> <confirm>"));
@@ -120,6 +139,7 @@ public class ProcesadorComandos {
 
         String tipo = privada ? "Privada" : "Pública";
         cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Sala creada (" + tipo + ") para " + capacidad + " jugadores. ID: " + nueva.getId()));
+        mostrarMenuPrincipal();
     }
     private void manejarUnirse(String[] partes) {
         if (!cliente.isAutenticado()) {
@@ -146,6 +166,7 @@ public class ProcesadorComandos {
             if (s.agregarJugador(cliente)) {
                 cliente.setSalaActual(s);
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Te has unido a la sala #" + s.getId()));
+                mostrarMenuPrincipal();
             } else {
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes unirte."));
             }
@@ -170,18 +191,14 @@ public class ProcesadorComandos {
         }
         cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, sb.toString()));
     }
-    private void manejarSalirSala() {
-        Sala sala = cliente.getSalaActual();
-        if (sala != null) {
-            sala.removerJugador(cliente);
-            if (sala.getJugadores().isEmpty()) {
-                GestorSalas.getInstancia().eliminarSala(sala);
-            }
-            cliente.setSalaActual(null);
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Has salido de la sala."));
-        } else {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No estás en ninguna sala."));
+    private void manejarSalir() {
+        if (cliente.getSalaActual() != null) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Primero usa /salir_sala para abandonar la partida."));
+            return;
         }
+        cliente.setAutenticado(false);
+        cliente.setNombreJugador(null);
+        cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Sesion cerrada."));
     }
     private void manejarIniciarPartida() {
         Sala sala = cliente.getSalaActual();
@@ -194,13 +211,22 @@ public class ProcesadorComandos {
         }
     }
     private void mostrarMenuPrincipal() {
-        String menu = "\n=== MENÚ ===\n" +
-                "/crear <2-6> [privada]\n" +
-                "/unirse <id_sala>\n" +
-                "/invitar <usuario>\n" +
-                "/lista\n" +
-                "/salir_sala\n" +
-                "/salir";
-        cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, menu));
+        if (cliente.getSalaActual() == null) {
+            String menu = "\n=== MENU ===\n" +
+                    "/crear <2-6> [privada]\n" +
+                    "/unir <id_sala>\n" +
+                    "/lista\n" +
+                    "/salir";
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, menu));
+        } else {
+            StringBuilder sb = new StringBuilder("\n=== MENU SALA ===\n");
+            sb.append("/salir_sala\n");
+            sb.append("/iniciar\n");
+
+            if (cliente.getSalaActual().isEsPrivada()) {
+                sb.append("/invitar <usuario>\n");
+            }
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, sb.toString()));
+        }
     }
 }
