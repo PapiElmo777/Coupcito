@@ -74,5 +74,13 @@ public class ServidorCoup {
         return sb.toString();
     }
     
-
+// --- MÉTODO PARA INVITACIONES 
+    public static synchronized HiloCliente buscarClientePorNombre(String nombre) {
+        for (HiloCliente cliente : clientesConectados) {
+            if (cliente.getNombreJugador() != null && cliente.getNombreJugador().equals(nombre)) {
+                return cliente;
+            }
+        }
+        return null;
+    }
 }
