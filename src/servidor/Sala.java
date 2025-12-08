@@ -1,5 +1,7 @@
 package servidor;
 
+import comun.Mensaje;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +42,14 @@ public class Sala implements Serializable {
     public void removerJugador(HiloCliente jugador) {
         if (jugadores != null) {
             jugadores.remove(jugador);
+        }
+    }
+
+    public void broadcastSala(Mensaje msj) {
+        if (jugadores != null) {
+            for (HiloCliente j : jugadores) {
+                j.enviarMensaje(msj);
+            }
         }
     }
 
