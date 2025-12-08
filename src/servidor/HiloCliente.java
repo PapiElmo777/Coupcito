@@ -16,6 +16,7 @@ public class HiloCliente extends Thread {
     private String nombreJugador = null;
     private boolean autenticado = false;
 
+    
     private static final String REGEX_USUARIO = "^[a-zA-Z0-9]{6,12}$";
     private static final String REGEX_PASS = "^[a-zA-Z0-9]{6,12}$";
 
@@ -34,6 +35,7 @@ public class HiloCliente extends Thread {
             salida.flush();
             entrada = new ObjectInputStream(socket.getInputStream());
 
+         
             enviarMensaje(new Mensaje(Constantes.ESTADO,
                     "--------------------------------------------------\n" +
                             " BIENVENIDO A COUP \n" +
@@ -52,6 +54,7 @@ public class HiloCliente extends Thread {
                         procesarComando(texto);
                     } else {
                         if (autenticado) {
+                            // Chat Global del Lobby 
                             ServidorCoup.broadcast(new Mensaje(Constantes.TEXTO, nombreJugador + ": " + texto));
                         } else {
                             enviarMensaje(new Mensaje(Constantes.ESTADO, "Debes iniciar sesión primero."));
@@ -61,7 +64,7 @@ public class HiloCliente extends Thread {
             }
 
         } catch (Exception e) {
-            System.out.println(">> Cliente desconectado.");
+            System.out.println(">> Cliente " + (nombreJugador != null ? nombreJugador : "anónimo") + " desconectado.");
         } finally {
             desconectar();
         }
@@ -71,9 +74,10 @@ public class HiloCliente extends Thread {
         String[] partes = texto.trim().split("\\s+");
         String comando = partes[0];
 
+        //  COMANDOS DE REGISTRO Y LOGIN 
         if (comando.equals("/registrar")) {
             if (autenticado) {
-                enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya has iniciado sesión."));
+                enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya has iniciado sesión como " + nombreJugador));
                 return;
             }
             if (partes.length != 4) {
@@ -81,10 +85,12 @@ public class HiloCliente extends Thread {
                 return;
             }
             registro(partes[1], partes[2], partes[3]);
+            return;
+        }
 
-        } else if (comando.equals("/login")) {
+        if (comando.equals("/login")) {
             if (autenticado) {
-                enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya estás dentro."));
+                enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya estás dentro como " + nombreJugador));
                 return;
             }
             if (partes.length != 4) {
@@ -92,9 +98,37 @@ public class HiloCliente extends Thread {
                 return;
             }
             login(partes[1], partes[2]);
+            return;
+        }
 
+        // COMANDOS DE LOBBY 
+        if (autenticado) {
+            switch (comando) {
+                case "/crear":
+                 
+                    enviarMensaje(new Mensaje(Constantes.ESTADO, ">> [Sistema] Solicitud recibida: Crear sala. (En construcción)"));
+                    break;
+                case "/unirse":
+                
+                    enviarMensaje(new Mensaje(Constantes.ESTADO, ">> [Sistema] Solicitud recibida: Unirse a sala. (En construcción)"));
+                    break;
+                case "/lista":
+                  
+                    enviarMensaje(new Mensaje(Constantes.ESTADO, ">> [Sistema] Buscando salas disponibles... (En construcción)"));
+                    break;
+                case "/salir":
+                    enviarMensaje(new Mensaje(Constantes.ESTADO, "Cerrando sesión..."));
+                    desconectar();
+                    break;
+                case "/ayuda":
+                    mostrarMenuPrincipal();
+                    break;
+                default:
+                    enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido. Escribe /ayuda para ver las opciones."));
+            }
         } else {
-            enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido."));
+           
+            enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido o no tienes permiso. Inicia sesión primero."));
         }
     }
 
@@ -123,21 +157,39 @@ public class HiloCliente extends Thread {
         if (BaseDatos.validarLogin(user, pass)) {
             this.nombreJugador = user;
             this.autenticado = true;
-            enviarMensaje(new Mensaje(Constantes.ESTADO, "Login correcto. Bienvenido al Lobby, " + user));
-
+            
+          
             ServidorCoup.clientesConectados.add(this);
-
+            
+            enviarMensaje(new Mensaje(Constantes.ESTADO, "Login correcto. Bienvenido al Lobby, " + user));
             ServidorCoup.broadcast(new Mensaje(Constantes.TEXTO, ">> " + user + " ha entrado al Lobby."));
+
+            mostrarMenuPrincipal();
+
         } else {
             enviarMensaje(new Mensaje(Constantes.ESTADO, "Credenciales incorrectas."));
         }
+    }
+
+
+    private void mostrarMenuPrincipal() {
+        String menu = "\n============== MENÚ PRINCIPAL ==============\n" +
+                      "1. /crear <capacidad> <privada/publica> \n" +
+                      "   (Ej: /crear 4 publica)\n" +
+                      "2. /unirse <id_sala>\n" +
+                      "3. /lista (Ver salas disponibles)\n" +
+                      "4. /salir (Cerrar sesión)\n" +
+                      "============================================";
+        enviarMensaje(new Mensaje(Constantes.ESTADO, menu));
     }
 
     public void enviarMensaje(Mensaje msj) {
         try {
             salida.writeObject(msj);
             salida.flush();
-        } catch (IOException e) {}
+        } catch (IOException e) {
+            
+        }
     }
 
     private void desconectar() {
@@ -147,6 +199,10 @@ public class HiloCliente extends Thread {
                 ServidorCoup.broadcast(new Mensaje(Constantes.TEXTO, ">> " + nombreJugador + " ha salido."));
             }
             socket.close();
-        } catch (IOException e) {}
+  
+            this.interrupt();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
