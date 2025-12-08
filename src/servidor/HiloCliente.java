@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.List;
 import java.util.regex.Pattern;
 
 public class HiloCliente extends Thread {
@@ -17,6 +18,10 @@ public class HiloCliente extends Thread {
     private boolean autenticado = false;
     private Sala salaActual = null;
     private ProcesadorComandos procesador;
+    //atributos juego
+    private int monedas;
+    private List<String> cartasEnMano;
+    private boolean estaVivo;
 
     public HiloCliente(Socket socket) {
         this.socket = socket;
@@ -90,7 +95,27 @@ public class HiloCliente extends Thread {
             socket.close();
         } catch (IOException e) {}
     }
+    //metodos de juego
+    public void reiniciarEstadoJuego() {
+        this.monedas = 2;
+        this.cartasEnMano.clear();
+        this.estaVivo = true;
+    }
 
+    public void agregarCarta(String carta) {
+        this.cartasEnMano.add(carta);
+    }
+    public void perderCarta(String carta) {
+        this.cartasEnMano.remove(carta);
+        if (this.cartasEnMano.isEmpty()) {
+            this.estaVivo = false;
+        }
+    }
+
+    public void sumarMonedas(int cantidad) {
+        this.monedas += cantidad;
+    }
+    //Getters y Setters
     public boolean isAutenticado() {
         return autenticado;
     }
@@ -114,4 +139,6 @@ public class HiloCliente extends Thread {
     public void setSalaActual(Sala salaActual) {
         this.salaActual = salaActual;
     }
+
+
 }
