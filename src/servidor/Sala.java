@@ -6,6 +6,7 @@ import comun.Mensaje;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collections;
 
 public class Sala implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -19,7 +20,7 @@ public class Sala implements Serializable {
 
    
     private transient List<HiloCliente> jugadores; 
-
+    private transient List<HiloCliente> mazo;
     
     public Sala(HiloCliente creador, int capacidad, boolean privada) {
         this.id = contadorIds++;
@@ -29,6 +30,7 @@ public class Sala implements Serializable {
         this.jugadores = new ArrayList<>();
         this.jugadores.add(creador); 
         this.enJuego = false;
+        this.mazo = new ArrayList<>();
     }
 
    
