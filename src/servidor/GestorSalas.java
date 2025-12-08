@@ -22,4 +22,18 @@ public class GestorSalas {
         salas.add(nueva);
         return nueva;
     }
+    public Sala buscarSala(int id) {
+        for (Sala s : salas) {
+            if (s.getId() == id) {
+                return s;
+            }
+        }
+        return null;
+    }
+    public List<Sala> getSalas() {
+        return new ArrayList<>(salas);
+    }
+    public void eliminarSala(Sala s) {
+        salas.remove(s);
+    }
 }
