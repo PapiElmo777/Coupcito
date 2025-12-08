@@ -97,17 +97,29 @@ public class ProcesadorComandos {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya estás en una sala. Usa /salir primero."));
             return;
         }
-
+        int capacidad = 6;
         boolean privada = false;
-        if (partes.length > 1 && partes[1].equalsIgnoreCase("privada")) {
+        if (partes.length > 1) {
+            String arg1 = partes[1];
+            if (arg1.matches("\\d+")) {
+                capacidad = Integer.parseInt(arg1);
+                if (capacidad < 2 || capacidad > 6) {
+                    cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "La sala debe ser de entre 2 y 6 jugadores."));
+                    return;
+                }
+            } else if (arg1.equalsIgnoreCase("privada")) {
+                privada = true;
+            }
+        }
+        if (partes.length > 2 && partes[2].equalsIgnoreCase("privada")) {
             privada = true;
         }
 
-        Sala nueva = GestorSalas.getInstancia().crearSala(cliente, 6, privada);
+        Sala nueva = GestorSalas.getInstancia().crearSala(cliente, capacidad, privada);
         cliente.setSalaActual(nueva);
 
         String tipo = privada ? "Privada" : "Pública";
-        cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Sala creada (" + tipo + "). ID: " + nueva.getId()));
+        cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Sala creada (" + tipo + ") para " + capacidad + " jugadores. ID: " + nueva.getId()));
     }
     private void manejarUnirse(String[] partes) {
         if (!cliente.isAutenticado()) {
