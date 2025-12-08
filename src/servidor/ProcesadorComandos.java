@@ -4,7 +4,9 @@ import comun.Constantes;
 import comun.Mensaje;
 
 public class ProcesadorComandos {
-    private HiloCliente cliente;
+    private final HiloCliente cliente;
+    private static final String REST_USUARIO = "^[a-zA-Z0-9]{6,12}$";
+    private static final String REST_PASS = "^[a-zA-Z0-9]{6,12}$";
 
     public ProcesadorComandos(HiloCliente cliente) {
         this.cliente = cliente;
@@ -36,7 +38,8 @@ public class ProcesadorComandos {
                 manejarIniciarPartida();
                 break;
             default:
-                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "❌ Comando desconocido."));
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido."));
         }
     }
+
 }
