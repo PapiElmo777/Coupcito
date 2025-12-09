@@ -21,6 +21,7 @@ public class Sala implements Serializable {
    
     private transient List<HiloCliente> jugadores; 
     private transient List<String> mazo;
+    private int turnoActual = 0;
     
     public Sala(HiloCliente creador, int capacidad, boolean privada) {
         this.id = contadorIds++;
@@ -83,8 +84,8 @@ public class Sala implements Serializable {
             jugador.reiniciarEstadoJuego();
 
             if (mazo.size() >= 2) {
-                jugador.agregarCarta(String.valueOf(mazo.remove(0)));
-                jugador.agregarCarta(String.valueOf(mazo.remove(0)));
+                jugador.agregarCarta(mazo.remove(0));
+                jugador.agregarCarta(mazo.remove(0));
             }
             StringBuilder info = new StringBuilder();
             info.append("¡La partida ha empezado shavalones!\n");
@@ -95,9 +96,15 @@ public class Sala implements Serializable {
         }
 
         broadcastSala(new Mensaje(Constantes.ESTADO, ">> Se han repartido las cartas. ¡Suerte a todos!"));
+
+        this.turnoActual = 0;
+        notificarTurno();
     }
 
-   
+    private void notificarTurno() {
+    }
+
+
     public int getId() {
         return id;
     }
