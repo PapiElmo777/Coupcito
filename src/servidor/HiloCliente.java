@@ -7,6 +7,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.regex.Pattern;
 
 public class HiloCliente extends Thread {
@@ -26,6 +27,7 @@ public class HiloCliente extends Thread {
     public HiloCliente(Socket socket) {
         this.socket = socket;
         this.procesador = new ProcesadorComandos(this);
+        this.cartasEnMano = new ArrayList<>();
     }
 
     @Override
@@ -98,7 +100,11 @@ public class HiloCliente extends Thread {
     //metodos de juego
     public void reiniciarEstadoJuego() {
         this.monedas = 2;
-        this.cartasEnMano.clear();
+        if (this.cartasEnMano == null) {
+            this.cartasEnMano = new ArrayList<>();
+        } else {
+            this.cartasEnMano.clear();
+        }
         this.estaVivo = true;
     }
 

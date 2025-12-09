@@ -20,7 +20,7 @@ public class Sala implements Serializable {
 
    
     private transient List<HiloCliente> jugadores; 
-    private transient List<HiloCliente> mazo;
+    private transient List<String> mazo;
     
     public Sala(HiloCliente creador, int capacidad, boolean privada) {
         this.id = contadorIds++;
@@ -30,7 +30,7 @@ public class Sala implements Serializable {
         this.jugadores = new ArrayList<>();
         this.jugadores.add(creador); 
         this.enJuego = false;
-        this.mazo = new ArrayList<>();
+        this.mazo = new ArrayList<String>();
     }
 
    
@@ -65,14 +65,51 @@ public class Sala implements Serializable {
             return false;
         }
         this.enJuego = true;
+        prepararJuego();
         return true;
     }
 
+    private void prepararJuego() {
+        mazo.clear();
+        String[] tipos = {Constantes.DUQUE, Constantes.ASESINO, Constantes.CAPITAN, Constantes.EMBAJADOR, Constantes.CONDESA};
+        for (String tipo : tipos) {
+            for (int i = 0; i < 3; i++) {
+                mazo.add(tipo);
+            }
+        }
+        Collections.shuffle(mazo);
+
+        for (HiloCliente jugador : jugadores) {
+            jugador.reiniciarEstadoJuego();
+
+            if (mazo.size() >= 2) {
+                jugador.agregarCarta(String.valueOf(mazo.remove(0)));
+                jugador.agregarCarta(String.valueOf(mazo.remove(0)));
+            }
+            StringBuilder info = new StringBuilder();
+            info.append("¡La partida ha empezado shavalones!\n");
+            info.append("Monedas: ").append(jugador.getMonedas()).append("\n");
+            info.append("Tus Cartas: ").append(jugador.getCartasEnMano()).append("\n");
+
+            jugador.enviarMensaje(new Mensaje(Constantes.ESTADO, info.toString()));
+        }
+
+        broadcastSala(new Mensaje(Constantes.ESTADO, ">> Se han repartido las cartas. ¡Suerte a todos!"));
+    }
+
    
-    public int getId() { return id; }
-    public boolean isEsPrivada() { return esPrivada; }
-    public boolean isEnJuego() { return enJuego; }
-    public List<HiloCliente> getJugadores() { return jugadores; }
+    public int getId() {
+        return id;
+    }
+    public boolean isEsPrivada() {
+        return esPrivada;
+    }
+    public boolean isEnJuego() {
+        return enJuego;
+    }
+    public List<HiloCliente> getJugadores() {
+        return jugadores;
+    }
 
     @Override
     public String toString() {
