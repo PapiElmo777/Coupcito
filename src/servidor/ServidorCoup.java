@@ -73,8 +73,7 @@ public class ServidorCoup {
         sb.append("-------------------------");
         return sb.toString();
     }
-    
-// --- MÉTODO PARA INVITACIONES 
+
     public static synchronized HiloCliente buscarClientePorNombre(String nombre) {
         for (HiloCliente cliente : clientesConectados) {
             if (cliente.getNombreJugador() != null && cliente.getNombreJugador().equals(nombre)) {
@@ -83,4 +82,8 @@ public class ServidorCoup {
         }
         return null;
     }
+
+    //notita para mi terminal PapiElmo
+    // cd /Users/alfredojimenez/IdeaProjects/Coupcito1/out/production/Coupcito
+    // java cliente.ClienteCoup
 }
