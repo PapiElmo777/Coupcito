@@ -42,19 +42,28 @@ public class ProcesadorComandos {
             case "/iniciar":
                 manejarIniciarPartida();
                 break;
+            case "/estado":
+                manejarEstado();
+                break;
+            //comandos juego
             case "/tomar_moneda":
                 tomarUnaMoneda();
                 break;
+            case "/dos_monedas":
+                tomarDos(); 
+                break;
+            case "/soy_duque":
+                tomarTres();
             case "/coupear":
                 coupear(partes);
                 break;
-            case "/estado":
-                manejarEstado();
-                break;    
             default:
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido."));
         }
     }
+
+
+
 
     private void coupear(String[] partes) {
         if (!verificarTurno()) return;
@@ -115,6 +124,20 @@ public class ProcesadorComandos {
 
         Sala sala = cliente.getSalaActual();
         sala.broadcastSala(new Mensaje(Constantes.TEXTO, ">> " + cliente.getNombreJugador() + " tomo una moneda (+1 moneda)."));
+        sala.siguienteTurno();
+    }
+
+    private void tomarDos() {
+        if (!verificarTurno()) return;
+        cliente.sumarMonedas(2);
+        Sala sala = cliente.getSalaActual();
+        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " tomo dos monedas(+2 monedas)."));
+        sala.siguienteTurno();
+    }
+    private void tomarTres() {
+        cliente.sumarMonedas(3);
+        Sala sala = cliente.getSalaActual();
+        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " tomo 3 monedas porque es el duke (+3 monedas)."));
         sala.siguienteTurno();
     }
 
