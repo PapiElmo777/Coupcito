@@ -102,6 +102,21 @@ public class Sala implements Serializable {
     }
 
     private void notificarTurno() {
+        if (jugadores.isEmpty()) return;
+        HiloCliente jugadorActivo = jugadores.get(turnoActual);
+        if (!jugadorActivo.isEstaVivo()) {
+            siguienteTurno();
+            return;
+        }
+        jugadorActivo.enviarMensaje(new Mensaje(Constantes.TURNO, ">> ES TU TURNO. (aqui van los comandos del juego)")); //Aqui van los comandos del juego
+        for (HiloCliente j : jugadores) {
+            if (j != jugadorActivo) {
+                j.enviarMensaje(new Mensaje(Constantes.ESTADO, "Turno de " + jugadorActivo.getNombreJugador()));
+            }
+        }
+    }
+
+    private void siguienteTurno() {
     }
 
 
