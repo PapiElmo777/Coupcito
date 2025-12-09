@@ -57,6 +57,9 @@ public class ProcesadorComandos {
             case "/coupear":
                 coupear(partes);
                 break;
+            case "/robar":
+                robar(partes);
+                break;
             default:
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido."));
         }
@@ -134,10 +137,39 @@ public class ProcesadorComandos {
         sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " tomo dos monedas(+2 monedas)."));
         sala.siguienteTurno();
     }
+    //duque
     private void tomarTres() {
         cliente.sumarMonedas(3);
         Sala sala = cliente.getSalaActual();
         sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " tomo 3 monedas porque es el duke (+3 monedas)."));
+        sala.siguienteTurno();
+    }
+    //capitan
+    private void robar(String[] partes) {
+        if (!verificarTurno()) return;
+        if (partes.length < 2) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /robar <jugador>"));
+            return;
+        }
+
+        Sala sala = cliente.getSalaActual();
+        HiloCliente victima = buscarObjetivo(sala, partes[1]);
+
+        if (victima == null || !victima.isEstaVivo() || victima == cliente) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Objetivo inválido."));
+            return;
+        }
+
+        int monto = 2;
+        if (victima.getMonedas() < 2) monto = victima.getMonedas();
+
+        if (monto > 0) {
+            victima.sumarMonedas(-monto);
+            cliente.sumarMonedas(monto);
+            sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " robo " + monto + " monedas a " + victima.getNombreJugador() + " porque es Capitan."));
+        } else {
+            sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " intento robar a " + victima.getNombreJugador() + " pero no tiene dinero."));
+        }
         sala.siguienteTurno();
     }
 
@@ -152,6 +184,14 @@ public class ProcesadorComandos {
             return false;
         }
         return true;
+    }
+    private HiloCliente buscarObjetivo(Sala sala, String nombreObjetivo) {
+        for (HiloCliente j : sala.getJugadores()) {
+            if (j.getNombreJugador().equalsIgnoreCase(nombreObjetivo)) {
+                return j;
+            }
+        }
+        return null;
     }
 
     private void manejarSalirDeSalaAlLobby() {
