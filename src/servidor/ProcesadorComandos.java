@@ -42,9 +42,47 @@ public class ProcesadorComandos {
             case "/iniciar":
                 manejarIniciarPartida();
                 break;
+            case "/tomar_moneda":
+                tomarUnaMoneda();
+                break;
+            case "/coupear":
+                coupear(partes);
+                break;
+            case "/estado":
+                manejarEstado();
+                break;    
             default:
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido."));
         }
+    }
+
+    private void coupear(String[] partes) {
+    }
+
+    private void manejarEstado() {
+        
+    }
+
+    private void tomarUnaMoneda() {
+        if (!verificarTurno()) return;
+        cliente.sumarMonedas(1);
+
+        Sala sala = cliente.getSalaActual();
+        sala.broadcastSala(new Mensaje(Constantes.TEXTO, ">> " + cliente.getNombreJugador() + " tomo una moneda (+1 moneda)."));
+        sala.siguienteTurno();
+    }
+
+    private boolean verificarTurno() {
+        Sala sala = cliente.getSalaActual();
+        if (sala == null || !sala.isEnJuego()) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No estas en una partida activa."));
+            return false;
+        }
+        if (!sala.esTurnoDe(cliente)) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "¡No es tu turno! Espera tu turno tramposo"));
+            return false;
+        }
+        return true;
     }
 
     private void manejarSalirDeSalaAlLobby() {
