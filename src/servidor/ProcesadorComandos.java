@@ -60,11 +60,13 @@ public class ProcesadorComandos {
             case "/robar":
                 robar(partes);
                 break;
+            case "/asesinar":
+                asesinar(partes);
+                break;
             default:
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido."));
         }
     }
-
 
 
 
@@ -170,6 +172,45 @@ public class ProcesadorComandos {
         } else {
             sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " intento robar a " + victima.getNombreJugador() + " pero no tiene dinero."));
         }
+        sala.siguienteTurno();
+    }
+    //asesina
+    private void asesinar(String[] partes) {
+        if (!verificarTurno()) return;
+        Sala sala = cliente.getSalaActual();
+        if (cliente.getMonedas() < 3) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Necesitas 3 monedas para asesinar. Tienes: " + cliente.getMonedas()));
+            return;
+        }
+        if (partes.length < 2) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /asesinar <nombre_jugador>"));
+            return;
+        }
+        String nombreVictima = partes[1];
+        HiloCliente victima = buscarObjetivo(sala, nombreVictima);
+        if (victima == null) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Jugador " + nombreVictima + " no encontrado."));
+            return;
+        }
+        if (!victima.isEstaVivo()) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes matar a un muerto, bobo."));
+            return;
+        }
+        if (victima.equals(cliente)) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes asesinarte a ti mismo, bobo"));
+            return;
+        }
+        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> ¡" + cliente.getNombreJugador() + " ha asesinado a " + victima.getNombreJugador() + "!"));
+
+        String cartaPerdida = victima.getCartasEnMano().get(0);
+        victima.perderCarta(cartaPerdida);
+
+        sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + victima.getNombreJugador() + " pierde su carta: " + cartaPerdida));
+
+        if (!victima.isEstaVivo()) {
+            sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + victima.getNombreJugador() + " ha sido eliminado."));
+        }
+
         sala.siguienteTurno();
     }
 
