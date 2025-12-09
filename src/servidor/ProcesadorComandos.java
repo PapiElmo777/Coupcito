@@ -57,10 +57,56 @@ public class ProcesadorComandos {
     }
 
     private void coupear(String[] partes) {
+        if (!verificarTurno()) return;
+        Sala sala = cliente.getSalaActual();
+        if (cliente.getMonedas() < 7) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Necesitas 7 monedas para un cupear a un jugador. Tienes: " + cliente.getMonedas()));
+            return;
+        }
+        if (partes.length < 2) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /coupear <nombre_jugador>"));
+            return;
+        }
+        String nombreVictima = partes[1];
+        HiloCliente victima = null;
+        for (HiloCliente j : sala.getJugadores()) {
+            if (j.getNombreJugador().equalsIgnoreCase(nombreVictima)) {
+                victima = j;
+                break;
+            }
+        }
+        if (victima == null) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Jugador " + nombreVictima + " no encontrado en la sala."));
+            return;
+        }
+        if (!victima.isEstaVivo()) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Ese jugador ya está eliminado."));
+            return;
+        }
+        if (victima.equals(cliente)) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes darte matarte a ti mismo, no seas bobo."));
+            return;
+        }
+        cliente.sumarMonedas(-7);
+        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> ¡" + cliente.getNombreJugador() + " coupeo a " + victima.getNombreJugador() + "!"));
+        String cartaPerdida = victima.getCartasEnMano().get(0);
+        victima.perderCarta(cartaPerdida);
+        sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + victima.getNombreJugador() + " perdio su carta: " + cartaPerdida));
+        if (!victima.isEstaVivo()) {
+            sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + victima.getNombreJugador() + " ha sido ELIMINADO ."));
+        }
+        sala.siguienteTurno();
     }
 
     private void manejarEstado() {
-        
+        if (cliente.getSalaActual() != null && cliente.getSalaActual().isEnJuego()) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
+                    "--- ESTADO ---\n" +
+                            "Monedas: " + cliente.getMonedas() + "\n" +
+                            "Cartas: " + cliente.getCartasEnMano()));
+        } else {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No estás jugando actualmente."));
+        }
     }
 
     private void tomarUnaMoneda() {
