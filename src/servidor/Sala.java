@@ -116,9 +116,19 @@ public class Sala implements Serializable {
         }
     }
 
-    private void siguienteTurno() {
-    }
+    public void siguienteTurno() {
+        if (!enJuego) return;
+        int intentos = 0;
+        do {
+            turnoActual = (turnoActual + 1) % jugadores.size();
+            intentos++;
+        } while (!jugadores.get(turnoActual).isEstaVivo() && intentos < jugadores.size());
 
+        notificarTurno();
+    }
+    public boolean esTurnoDe(HiloCliente jugador) {
+        return enJuego && jugadores.get(turnoActual).equals(jugador);
+    }
 
     public int getId() {
         return id;
