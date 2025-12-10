@@ -302,7 +302,29 @@ public class ProcesadorComandos {
     }
 
     private void manejarBloqueoCondesa() {
+        Sala sala = cliente.getSalaActual();
+        if (!sala.isEsperandoBloqueo()) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No hay ningun ataque que bloquear."));
+            return;
+        }
+        if (!sala.getJugadorObjetivo().equals(cliente)) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "¡No te están atacando a ti, metiche!"));
+            return;
+        }
+        HiloCliente asesino = sala.getJugadorAtacante();
+        sala.broadcastSala(new Mensaje(Constantes.ACCION,
+                ">> ¡" + cliente.getNombreJugador() + " ha bloqueado el asesinato porque es la condesa!"));
+        sala.broadcastSala(new Mensaje(Constantes.ESTADO,
+                ">> El asesinato ha fallado. " + asesino.getNombreJugador() + " pierde sus 3 monedas."));
+        limpiarEstadoAsesinato(sala);
+        sala.siguienteTurno();
+    }
 
+    private void limpiarEstadoAsesinato(Sala sala) {
+        sala.setEsperandoBloqueo(false);
+        sala.setJugadorAtacante(null);
+        sala.setJugadorObjetivo(null);
+        sala.setMonedasEnJuego(0);
     }
 
     private boolean verificarTurno() {
