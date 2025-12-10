@@ -129,6 +129,16 @@ public class Sala implements Serializable {
     public boolean esTurnoDe(HiloCliente jugador) {
         return enJuego && jugadores.get(turnoActual).equals(jugador);
     }
+    //metodos para el embajador
+    public String tomarCartaDelMazo() {
+        if (mazo.isEmpty()) return null;
+        return mazo.remove(0);
+    }
+
+    public void devolverCartaAlMazo(String carta) {
+        mazo.add(carta);
+        Collections.shuffle(mazo);
+    }
 
     public int getId() {
         return id;
