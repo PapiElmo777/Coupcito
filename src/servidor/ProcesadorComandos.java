@@ -184,44 +184,43 @@ public class ProcesadorComandos {
         }
         sala.siguienteTurno();
     }
-    //asesina
+    //asesina y accion condesa
     private void asesinar(String[] partes) {
         if (!verificarTurno()) return;
         Sala sala = cliente.getSalaActual();
+
+        if (sala.isEsperandoBloqueo()) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Hay una acción pendiente de resolución."));
+            return;
+        }
+
         if (cliente.getMonedas() < 3) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Necesitas 3 monedas para asesinar. Tienes: " + cliente.getMonedas()));
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Necesitas 3 monedas. Tienes: " + cliente.getMonedas()));
             return;
         }
         if (partes.length < 2) {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /asesinar <nombre_jugador>"));
             return;
         }
+
         String nombreVictima = partes[1];
         HiloCliente victima = buscarObjetivo(sala, nombreVictima);
-        if (victima == null) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Jugador " + nombreVictima + " no encontrado."));
+
+        if (victima == null || !victima.isEstaVivo() || victima == cliente) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Objetivo inválido."));
             return;
         }
-        if (!victima.isEstaVivo()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes matar a un muerto, bobo."));
-            return;
-        }
-        if (victima.equals(cliente)) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes asesinarte a ti mismo, bobo"));
-            return;
-        }
-        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> ¡" + cliente.getNombreJugador() + " ha asesinado a " + victima.getNombreJugador() + "!"));
-
-        String cartaPerdida = victima.getCartasEnMano().get(0);
-        victima.perderCarta(cartaPerdida);
-
-        sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + victima.getNombreJugador() + " pierde su carta: " + cartaPerdida));
-
-        if (!victima.isEstaVivo()) {
-            sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + victima.getNombreJugador() + " ha sido eliminado."));
-        }
-
-        sala.siguienteTurno();
+        cliente.sumarMonedas(-3);
+        sala.setEsperandoBloqueo(true);
+        sala.setJugadorAtacante(cliente);
+        sala.setJugadorObjetivo(victima);
+        sala.setMonedasEnJuego(3);
+        sala.broadcastSala(new Mensaje(Constantes.ACCION,
+                ">> ¡" + cliente.getNombreJugador() + " quiere asesinar a " + victima.getNombreJugador() + "!\n" +
+                        ">> " + victima.getNombreJugador() + ", ¿tienes a la condesa? \n" +
+                        ">> Usa: /bloquear (si tienes Condesa o quieres mentir) \n" +
+                        ">> Usa: /aceptar (para morir con dignidad)"
+        ));
     }
     //embajador
     private void iniciarEmbajador() {
