@@ -63,10 +63,17 @@ public class ProcesadorComandos {
             case "/asesinar":
                 asesinar(partes);
                 break;
+            case "/embajador"://embajador
+                iniciarEmbajador();
+                break;
+            case "/seleccionar"://embajador
+                finalizarEmbajador(partes);
+                break;
             default:
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido."));
         }
     }
+
 
 
 
@@ -212,6 +219,35 @@ public class ProcesadorComandos {
         }
 
         sala.siguienteTurno();
+    }
+    //embajador
+    private void iniciarEmbajador() {
+        if (!verificarTurno()) return;
+
+        Sala sala = cliente.getSalaActual();
+        String c1 = sala.tomarCartaDelMazo();
+        String c2 = sala.tomarCartaDelMazo();
+
+        if (c1 == null || c2 == null) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No hay suficientes cartas en el mazo."));
+            return;
+        }
+        cliente.agregarCarta(c1);
+        cliente.agregarCarta(c2);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("--- INTERCAMBIO DE EMBAJADOR ---\n");
+        sb.append("Has tomado: ").append(c1).append(" y ").append(c2).append("\n");
+        sb.append("Tus cartas ahora son: ").append(cliente.getCartasEnMano()).append("\n");
+        sb.append("DEBES quedarte con ").append(cliente.getCartasEnMano().size() - 2).append(" carta(s).\n");
+        sb.append("Usa: /seleccionar <carta1> [carta2]\n");
+        sb.append("Ejemplo: /seleccionar Duque  (si solo tienes 1 vida)\n");
+        sb.append("Ejemplo: /seleccionar Duque Condesa (si tienes 2 vidas)");
+
+        cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, sb.toString()));
+    }
+
+    private void finalizarEmbajador(String[] partes) {
     }
 
     private boolean verificarTurno() {
