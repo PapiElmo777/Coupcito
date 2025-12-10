@@ -18,26 +18,11 @@ public class ProcesadorComandos {
     public void procesar(String texto) {
         String[] partes = texto.trim().split("\\s+");
         String comando = partes[0];
-        if (cliente.getMonedas() >= 10) {
-            boolean esComandoPermitido = comando.equals("/coupear") ||
-                    comando.equals("/estado") ||
-                    comando.equals("/salir") ||
-                    comando.equals("/salir_sala");
 
-            if (!esComandoPermitido) {
-                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
-                        "¡TIENES " + cliente.getMonedas() + " MONEDAS! \n" +
-                                "Estas OBLIGADO a Coupear shavalon.\n" +
-                                "Usa: /coupear <jugador>"));
-                return;
-            }
-        }
-        if (cliente.getCartasEnMano().size() > 2) {
-            if (!texto.startsWith("/seleccionar")) {
-                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
-                        "Debes usar /seleccionar <carta1> [carta2] para continuar el juego"));
-                return;
-            }
+        // Si esta función devuelve true, es que hay algo bloqueando (ej. tienes 10 monedas)
+        // y no debemos procesar nada más.
+        if (bloquearPorRestricciones(comando)) {
+            return;
         }
 
         switch (comando) {
@@ -102,13 +87,42 @@ public class ProcesadorComandos {
         }
     }
 
+   
+    private boolean bloquearPorRestricciones(String comando) {
+        // Regla: Obligado a Coupear con 10 o más monedas
+        if (cliente.getMonedas() >= 10) {
+            boolean esComandoPermitido = comando.equals("/coupear") ||
+                    comando.equals("/estado") ||
+                    comando.equals("/salir") ||
+                    comando.equals("/salir_sala");
+
+            if (!esComandoPermitido) {
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
+                        "¡TIENES " + cliente.getMonedas() + " MONEDAS! \n" +
+                                "Estas OBLIGADO a Coupear shavalon.\n" +
+                                "Usa: /coupear <jugador>"));
+                return true; // Bloquea el resto del proceso
+            }
+        }
+        // Regla: Embajador (exceso de cartas)
+        if (cliente.getCartasEnMano().size() > 2) {
+            if (!comando.startsWith("/seleccionar")) {
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
+                        "Debes usar /seleccionar <carta1> [carta2] para continuar el juego"));
+                return true; // Bloquea el resto del proceso
+            }
+        }
+        return false; // No hay bloqueos, puede continuar
+    }
+
+    // --- EL RESTO DEL CÓDIGO SIGUE IGUAL ---
+
     private void enviarEstadoActualizado(HiloCliente j) {
         if (j.getSalaActual() != null && j.getSalaActual().isEnJuego()) {
             j.enviarMensaje(new Mensaje(Constantes.ESTADO,
                     "TUS DATOS | monedas: " + cliente.getMonedas() + " | Cartas: " + cliente.getCartasEnMano()));
         }
     }
-
 
     private void coupear(String[] partes) {
         if (!verificarTurno()) return;
