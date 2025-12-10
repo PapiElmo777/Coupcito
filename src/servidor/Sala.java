@@ -17,7 +17,9 @@ public class Sala implements Serializable {
     private boolean esPrivada;
     private boolean enJuego;
     private String nombreAdmin;
-
+    private boolean esperandoDesafio = false; 
+    private String cartaRequerida = null;    
+    private String accionPendiente = null;   
    
     private transient List<HiloCliente> jugadores; 
     private transient List<String> mazo;
