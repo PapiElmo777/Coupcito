@@ -86,6 +86,19 @@ public class Sala implements Serializable {
         }
         Collections.shuffle(mazo);
 
+        String ayuda = "\n=== LISTA DE COMANDOS ===\n" +
+                "INGRESOS:\n" +
+                "  /tomar_moneda  -> Toma 1 moneda (Nadie puede bloquear).\n" +
+                "  /dos_monedas   -> Toma 2 monedas (Bloqueable por Duque).\n" +
+                "  /soy_duque     -> Toma 3 monedas (Desafiable).\n" +
+                "ACCIONES DE ATAQUE:\n" +
+                "  /asesinar <jugador> -> Paga 3 monedas para eliminar una carta (Bloqueable por Condesa).\n" +
+                "  /robar <jugador>    -> Capitan: Roba 2 monedas (Bloqueable por Capitan/Embajador).\n" +
+                "  /coupear <jugador>  -> Paga 7 monedas para matar a un jugador de manera inevitable.\n" +
+                "OTRAS:\n" +
+                "  /embajador -> Cambia tus cartas con el mazo.\n" +
+                "============================\n";
+
         for (HiloCliente jugador : jugadores) {
             jugador.reiniciarEstadoJuego();
 
@@ -93,6 +106,8 @@ public class Sala implements Serializable {
                 jugador.agregarCarta(mazo.remove(0));
                 jugador.agregarCarta(mazo.remove(0));
             }
+            jugador.enviarMensaje(new Mensaje(Constantes.ESTADO, ayuda));
+
             StringBuilder info = new StringBuilder();
             info.append("¡La partida ha empezado shavalones!\n");
             info.append("Monedas: ").append(jugador.getMonedas()).append("\n");
@@ -114,10 +129,11 @@ public class Sala implements Serializable {
             siguienteTurno();
             return;
         }
-        jugadorActivo.enviarMensaje(new Mensaje(Constantes.TURNO, ">> ES TU TURNO. (aqui van los comandos del juego)")); //Aqui van los comandos del juego
         for (HiloCliente j : jugadores) {
-            if (j != jugadorActivo) {
-                j.enviarMensaje(new Mensaje(Constantes.ESTADO, "Turno de " + jugadorActivo.getNombreJugador()));
+            if (j == jugadorActivo) {
+                j.enviarMensaje(new Mensaje(Constantes.TURNO, "\n>>> Es tu turno shavalon <<< \n(Usa un comando de la lista)"));
+            } else {
+                j.enviarMensaje(new Mensaje(Constantes.ESTADO, "\nEs el turno de: " + jugadorActivo.getNombreJugador()));
             }
         }
     }

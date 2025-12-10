@@ -55,15 +55,15 @@ public class ProcesadorComandos {
             case "/dos_monedas":
                 tomarDos(); 
                 break;
-            case "/soy_duque":
+            case "/soy_duque"://duque
                 tomarTres();
             case "/coupear":
                 coupear(partes);
                 break;
-            case "/robar":
+            case "/robar"://capitan
                 robar(partes);
                 break;
-            case "/asesinar":
+            case "/asesinar"://asesina
                 asesinar(partes);
                 break;
             case "/embajador"://embajador
