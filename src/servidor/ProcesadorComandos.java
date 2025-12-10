@@ -139,6 +139,7 @@ public class ProcesadorComandos {
         if (!victima.isEstaVivo()) {
             sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + victima.getNombreJugador() + " ha sido ELIMINADO ."));
         }
+        enviarEstadoActualizado();
         sala.siguienteTurno();
     }
 
@@ -159,6 +160,7 @@ public class ProcesadorComandos {
 
         Sala sala = cliente.getSalaActual();
         sala.broadcastSala(new Mensaje(Constantes.TEXTO, ">> " + cliente.getNombreJugador() + " tomo una moneda (+1 moneda)."));
+        enviarEstadoActualizado();
         sala.siguienteTurno();
     }
 
@@ -167,6 +169,7 @@ public class ProcesadorComandos {
         cliente.sumarMonedas(2);
         Sala sala = cliente.getSalaActual();
         sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " tomo dos monedas(+2 monedas)."));
+        enviarEstadoActualizado();
         sala.siguienteTurno();
     }
     //duque
@@ -174,6 +177,7 @@ public class ProcesadorComandos {
         cliente.sumarMonedas(3);
         Sala sala = cliente.getSalaActual();
         sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " tomo 3 monedas porque es el duke (+3 monedas)."));
+        enviarEstadoActualizado();
         sala.siguienteTurno();
     }
     //capitan
@@ -202,6 +206,7 @@ public class ProcesadorComandos {
         } else {
             sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " intento robar a " + victima.getNombreJugador() + " pero no tiene dinero."));
         }
+        enviarEstadoActualizado();
         sala.siguienteTurno();
     }
     //asesina y accion condesa
@@ -241,6 +246,7 @@ public class ProcesadorComandos {
                         ">> Usa: /bloquear (si tienes Condesa o quieres mentir) \n" +
                         ">> Usa: /aceptar (para morir con dignidad)"
         ));
+        enviarEstadoActualizado();
     }
     //embajador
     private void iniciarEmbajador() {
@@ -308,6 +314,7 @@ public class ProcesadorComandos {
         cliente.getCartasEnMano().addAll(nuevaMano);
 
         sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " ha cabiado sus cartas con el Embajador."));
+        enviarEstadoActualizado();
         sala.siguienteTurno();
     }
     //condesa
@@ -324,7 +331,7 @@ public class ProcesadorComandos {
         if (!victima.isEstaVivo()) {
             sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + victima.getNombreJugador() + " ha sido ELIMINADO."));
         }
-
+        enviarEstadoActualizado();
         limpiarEstadoAsesinato(sala);
         sala.siguienteTurno();
     }
