@@ -39,6 +39,12 @@ public class Sala implements Serializable {
     public String getAccionPendiente() { return accionPendiente; }
     public void setAccionPendiente(String accionPendiente) { this.accionPendiente = accionPendiente; }
     
+    public void limpiarEstadoDesafio() {
+        this.esperandoDesafio = false;
+        this.cartaRequerida = null;
+        this.accionPendiente = null;
+        
+    }
     public Sala(HiloCliente creador, int capacidad, boolean privada) {
         this.id = contadorIds++;
         this.capacidadMaxima = capacidad;
