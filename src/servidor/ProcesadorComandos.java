@@ -17,6 +17,13 @@ public class ProcesadorComandos {
     }
 
     public void procesar(String texto) {
+        if (cliente.getCartasEnMano().size() > 2) {
+            if (!texto.startsWith("/seleccionar")) {
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
+                        "Debes usar /seleccionar <carta1> [carta2] para continuar el juego"));
+                return;
+            }
+        }
         String[] partes = texto.trim().split("\\s+");
         String comando = partes[0];
 
@@ -57,6 +64,7 @@ public class ProcesadorComandos {
                 break;
             case "/soy_duque"://duque
                 tomarTres();
+                break;
             case "/coupear":
                 coupear(partes);
                 break;
