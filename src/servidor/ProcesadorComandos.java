@@ -72,6 +72,13 @@ public class ProcesadorComandos {
             case "/seleccionar"://embajador
                 finalizarEmbajador(partes);
                 break;
+                //condesa
+            case "/bloquear":
+                manejarBloqueoCondesa();
+                break;
+            case "/aceptar":
+                manejarAceptarMuerte();
+                break;
             default:
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido."));
         }
@@ -289,6 +296,13 @@ public class ProcesadorComandos {
 
         sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " ha cabiado sus cartas con el Embajador."));
         sala.siguienteTurno();
+    }
+    //condesa
+    private void manejarAceptarMuerte() {
+    }
+
+    private void manejarBloqueoCondesa() {
+
     }
 
     private boolean verificarTurno() {
