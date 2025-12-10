@@ -17,6 +17,22 @@ public class ProcesadorComandos {
     }
 
     public void procesar(String texto) {
+        String[] partes = texto.trim().split("\\s+");
+        String comando = partes[0];
+        if (cliente.getMonedas() >= 10) {
+            boolean esComandoPermitido = comando.equals("/coupear") ||
+                    comando.equals("/estado") ||
+                    comando.equals("/salir") ||
+                    comando.equals("/salir_sala");
+
+            if (!esComandoPermitido) {
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
+                        "¡TIENES " + cliente.getMonedas() + " MONEDAS! \n" +
+                                "Estas OBLIGADO a Coupear shavalon.\n" +
+                                "Usa: /coupear <jugador>"));
+                return;
+            }
+        }
         if (cliente.getCartasEnMano().size() > 2) {
             if (!texto.startsWith("/seleccionar")) {
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
@@ -24,8 +40,6 @@ public class ProcesadorComandos {
                 return;
             }
         }
-        String[] partes = texto.trim().split("\\s+");
-        String comando = partes[0];
 
         switch (comando) {
             case "/registrar":
@@ -51,9 +65,6 @@ public class ProcesadorComandos {
                 break;
             case "/iniciar":
                 manejarIniciarPartida();
-                break;
-            case "/estado":
-                manejarEstado();
                 break;
             //comandos juego
             case "/tomar_moneda":
@@ -92,9 +103,9 @@ public class ProcesadorComandos {
         }
     }
 
-    private void enviarEstadoActualizado() {
-        if (cliente.getSalaActual() != null && cliente.getSalaActual().isEnJuego()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
+    private void enviarEstadoActualizado(HiloCliente j) {
+        if (j.getSalaActual() != null && j.getSalaActual().isEnJuego()) {
+            j.enviarMensaje(new Mensaje(Constantes.ESTADO,
                     "TUS DATOS | monedas: " + cliente.getMonedas() + " | Cartas: " + cliente.getCartasEnMano()));
         }
     }
@@ -139,28 +150,17 @@ public class ProcesadorComandos {
         if (!victima.isEstaVivo()) {
             sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + victima.getNombreJugador() + " ha sido ELIMINADO ."));
         }
-        enviarEstadoActualizado();
+        enviarEstadoActualizado(cliente);
+        enviarEstadoActualizado(victima);
         sala.siguienteTurno();
-    }
-
-    private void manejarEstado() {
-        if (cliente.getSalaActual() != null && cliente.getSalaActual().isEnJuego()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
-                    "--- ESTADO ---\n" +
-                            "Monedas: " + cliente.getMonedas() + "\n" +
-                            "Cartas: " + cliente.getCartasEnMano()));
-        } else {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No estás jugando actualmente."));
-        }
     }
 
     private void tomarUnaMoneda() {
         if (!verificarTurno()) return;
         cliente.sumarMonedas(1);
-
         Sala sala = cliente.getSalaActual();
-        sala.broadcastSala(new Mensaje(Constantes.TEXTO, ">> " + cliente.getNombreJugador() + " tomo una moneda (+1 moneda)."));
-        enviarEstadoActualizado();
+        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " tomo 1 moneda."));
+        enviarEstadoActualizado(cliente);
         sala.siguienteTurno();
     }
 
@@ -169,7 +169,7 @@ public class ProcesadorComandos {
         cliente.sumarMonedas(2);
         Sala sala = cliente.getSalaActual();
         sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " tomo dos monedas(+2 monedas)."));
-        enviarEstadoActualizado();
+        enviarEstadoActualizado(cliente);
         sala.siguienteTurno();
     }
     //duque
@@ -177,7 +177,7 @@ public class ProcesadorComandos {
         cliente.sumarMonedas(3);
         Sala sala = cliente.getSalaActual();
         sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " tomo 3 monedas porque es el duke (+3 monedas)."));
-        enviarEstadoActualizado();
+        enviarEstadoActualizado(cliente);
         sala.siguienteTurno();
     }
     //capitan
@@ -187,7 +187,6 @@ public class ProcesadorComandos {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /robar <jugador>"));
             return;
         }
-
         Sala sala = cliente.getSalaActual();
         HiloCliente victima = buscarObjetivo(sala, partes[1]);
 
@@ -202,11 +201,15 @@ public class ProcesadorComandos {
         if (monto > 0) {
             victima.sumarMonedas(-monto);
             cliente.sumarMonedas(monto);
-            sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " robo " + monto + " monedas a " + victima.getNombreJugador() + " porque es Capitan."));
+
+            sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " robó " + monto + " monedas a " + victima.getNombreJugador() + " porque es capitan."));
+            victima.enviarMensaje(new Mensaje(Constantes.ESTADO, "¡TE HAN ROBADO " + monto + " MONEDAS!"));
+            enviarEstadoActualizado(cliente);
+            enviarEstadoActualizado(victima);
         } else {
-            sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " intento robar a " + victima.getNombreJugador() + " pero no tiene dinero."));
+            sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " intentó robar a " + victima.getNombreJugador() + " pero no tiene dinero."));
+            enviarEstadoActualizado(cliente);
         }
-        enviarEstadoActualizado();
         sala.siguienteTurno();
     }
     //asesina y accion condesa
@@ -246,7 +249,7 @@ public class ProcesadorComandos {
                         ">> Usa: /bloquear (si tienes Condesa o quieres mentir) \n" +
                         ">> Usa: /aceptar (para morir con dignidad)"
         ));
-        enviarEstadoActualizado();
+        enviarEstadoActualizado(cliente);
     }
     //embajador
     private void iniciarEmbajador() {
@@ -314,7 +317,7 @@ public class ProcesadorComandos {
         cliente.getCartasEnMano().addAll(nuevaMano);
 
         sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " ha cabiado sus cartas con el Embajador."));
-        enviarEstadoActualizado();
+        enviarEstadoActualizado(cliente);
         sala.siguienteTurno();
     }
     //condesa
@@ -331,7 +334,7 @@ public class ProcesadorComandos {
         if (!victima.isEstaVivo()) {
             sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + victima.getNombreJugador() + " ha sido ELIMINADO."));
         }
-        enviarEstadoActualizado();
+        enviarEstadoActualizado(victima);
         limpiarEstadoAsesinato(sala);
         sala.siguienteTurno();
     }

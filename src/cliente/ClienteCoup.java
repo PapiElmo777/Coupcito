@@ -25,7 +25,7 @@ public class ClienteCoup {
                 try {
                     while (conectado) {
                         Mensaje msj = (Mensaje) entrada.readObject();
-                        if (msj.tipo.equals(Constantes.TEXTO) || msj.tipo.equals(Constantes.ESTADO)) {
+                        if (msj.contenido != null) {
                             System.out.println(msj.contenido);
                         }
                     }
