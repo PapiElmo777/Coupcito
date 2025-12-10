@@ -2,7 +2,6 @@ package servidor;
 
 import comun.Constantes;
 import comun.Mensaje;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -438,7 +437,7 @@ public class ProcesadorComandos {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "El usuario ya existe."));
         }
     }
-    private void manejarLogin(String[] partes) {
+   private void manejarLogin(String[] partes) {
         if (cliente.isAutenticado()) {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya has iniciado sesion."));
             return;
@@ -450,9 +449,21 @@ public class ProcesadorComandos {
         String user = partes[1];
         String pass = partes[2];
 
+        // Verificar si ya está conectado 
+        if (ServidorCoup.buscarClientePorNombre(user) != null) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Error: El usuario '" + user + "' ya está conectado."));
+            return;
+        }
+        
+
         if (BaseDatos.validarLogin(user, pass)) {
             cliente.setNombreJugador(user);
             cliente.setAutenticado(true);
+            
+           
+            ServidorCoup.clientesConectados.add(cliente);
+          
+            
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Bienvenido " + user));
             mostrarMenuPrincipal();
         } else {
