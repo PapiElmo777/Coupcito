@@ -504,7 +504,7 @@ public class ProcesadorComandos {
         cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Sala creada (" + tipo + ") para " + capacidad + " jugadores. ID: " + nueva.getId()));
         mostrarMenuPrincipal();
     }
-    private void manejarUnirse(String[] partes) {
+   private void manejarUnirse(String[] partes) {
         if (!cliente.isAutenticado()) {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Debes iniciar sesión primero."));
             return;
@@ -526,12 +526,19 @@ public class ProcesadorComandos {
                 return;
             }
 
+            // Validar privacidad ---
+            if (s.isEsPrivada()) {
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Esta sala es PRIVADA. Solo puedes entrar por invitación."));
+                return;
+            }
+      
+
             if (s.agregarJugador(cliente)) {
                 cliente.setSalaActual(s);
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Te has unido a la sala #" + s.getId()));
                 mostrarMenuPrincipal();
             } else {
-                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes unirte."));
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes unirte (Sala llena o en juego)."));
             }
         } catch (NumberFormatException e) {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "El ID debe ser un número."));
