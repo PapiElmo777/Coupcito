@@ -92,7 +92,12 @@ public class ProcesadorComandos {
         }
     }
 
-
+    private void enviarEstadoActualizado() {
+        if (cliente.getSalaActual() != null && cliente.getSalaActual().isEnJuego()) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
+                    "TUS DATOS | monedas: " + cliente.getMonedas() + " | Cartas: " + cliente.getCartasEnMano()));
+        }
+    }
 
 
     private void coupear(String[] partes) {
@@ -357,11 +362,16 @@ public class ProcesadorComandos {
             return false;
         }
         if (!sala.esTurnoDe(cliente)) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "¡No es tu turno! Espera tu turno tramposo"));
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "¡No es tu turno! Espera, tramposo."));
+            return false;
+        }
+        if (sala.isEsperandoBloqueo()) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Hay una accion pendiente de resolución (Asesinato). Espera."));
             return false;
         }
         return true;
     }
+
     private HiloCliente buscarObjetivo(Sala sala, String nombreObjetivo) {
         for (HiloCliente j : sala.getJugadores()) {
             if (j.getNombreJugador().equalsIgnoreCase(nombreObjetivo)) {
