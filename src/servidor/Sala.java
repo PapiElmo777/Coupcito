@@ -22,6 +22,12 @@ public class Sala implements Serializable {
     private transient List<HiloCliente> jugadores; 
     private transient List<String> mazo;
     private int turnoActual = 0;
+
+    // --- variables condesa ---
+    private HiloCliente jugadorAtacante;
+    private HiloCliente jugadorObjetivo;
+    private boolean esperandoBloqueo = false;
+    private int monedasAsesina = 0; //
     
     public Sala(HiloCliente creador, int capacidad, boolean privada) {
         this.id = contadorIds++;
@@ -139,7 +145,7 @@ public class Sala implements Serializable {
         mazo.add(carta);
         Collections.shuffle(mazo);
     }
-
+    //setters y getters
     public int getId() {
         return id;
     }
@@ -151,6 +157,32 @@ public class Sala implements Serializable {
     }
     public List<HiloCliente> getJugadores() {
         return jugadores;
+    }
+
+    public boolean isEsperandoBloqueo() {
+        return esperandoBloqueo;
+    }
+    public void setEsperandoBloqueo(boolean espera) {
+        this.esperandoBloqueo = espera;
+    }
+
+    public HiloCliente getJugadorObjetivo() {
+        return jugadorObjetivo;
+    }
+    public void setJugadorObjetivo(HiloCliente objetivo) {
+        this.jugadorObjetivo = objetivo;
+    }
+
+    public HiloCliente getJugadorAtacante() {
+        return jugadorAtacante;
+    }
+    public void setJugadorAtacante(HiloCliente atacante) { this.jugadorAtacante = atacante; }
+
+    public int getMonedasEnJuego() {
+        return monedasAsesina;
+    }
+    public void setMonedasEnJuego(int monedas) {
+        this.monedasAsesina = monedas;
     }
 
     @Override
