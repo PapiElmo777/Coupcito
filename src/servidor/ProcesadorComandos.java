@@ -299,6 +299,21 @@ public class ProcesadorComandos {
     }
     //condesa
     private void manejarAceptarMuerte() {
+        Sala sala = cliente.getSalaActual();
+        if (!sala.isEsperandoBloqueo() || !sala.getJugadorObjetivo().equals(cliente)) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No tienes nada que aceptar."));
+            return;
+        }
+        HiloCliente victima = cliente;
+        String cartaPerdida = victima.getCartasEnMano().get(0);
+        victima.perderCarta(cartaPerdida);
+        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + victima.getNombreJugador() + " acepta su destino y pierde: " + cartaPerdida));
+        if (!victima.isEstaVivo()) {
+            sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + victima.getNombreJugador() + " ha sido ELIMINADO."));
+        }
+
+        limpiarEstadoAsesinato(sala);
+        sala.siguienteTurno();
     }
 
     private void manejarBloqueoCondesa() {
