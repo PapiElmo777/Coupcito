@@ -24,12 +24,20 @@ public class Sala implements Serializable {
     private transient List<HiloCliente> jugadores; 
     private transient List<String> mazo;
     private int turnoActual = 0;
-
+    
     // --- variables condesa ---
     private HiloCliente jugadorAtacante;
     private HiloCliente jugadorObjetivo;
     private boolean esperandoBloqueo = false;
     private int monedasAsesina = 0; //
+    public boolean isEsperandoDesafio() { return esperandoDesafio; }
+    public void setEsperandoDesafio(boolean esperandoDesafio) { this.esperandoDesafio = esperandoDesafio; }
+    
+    public String getCartaRequerida() { return cartaRequerida; }
+    public void setCartaRequerida(String cartaRequerida) { this.cartaRequerida = cartaRequerida; }
+    
+    public String getAccionPendiente() { return accionPendiente; }
+    public void setAccionPendiente(String accionPendiente) { this.accionPendiente = accionPendiente; }
     
     public Sala(HiloCliente creador, int capacidad, boolean privada) {
         this.id = contadorIds++;
