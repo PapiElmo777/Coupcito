@@ -2,6 +2,9 @@ package servidor;
 
 import comun.Constantes;
 import comun.Mensaje;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 
 public class ProcesadorComandos {
@@ -248,6 +251,45 @@ public class ProcesadorComandos {
     }
 
     private void finalizarEmbajador(String[] partes) {
+        if (!verificarTurno()) return;
+        List<String> manoActual = cliente.getCartasEnMano();
+        if (manoActual.size() <= 2) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No estas en medio de un intercambio de Embajador."));
+            return;
+        }
+        int cartasAConservar = manoActual.size() - 2;
+        if (partes.length - 1 != cartasAConservar) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Debes seleccionar exactamente " + cartasAConservar + " carta(s)."));
+            return;
+        }
+        List<String> nuevaMano = new ArrayList<>();
+        List<String> copiaMano = new ArrayList<>(manoActual);
+
+        for (int i = 1; i < partes.length; i++) {
+            String cartaElegida = partes[i];
+            boolean encontrada = false;
+            for (String c : copiaMano) {
+                if (c.equalsIgnoreCase(cartaElegida)) {
+                    nuevaMano.add(c);
+                    copiaMano.remove(c);
+                    encontrada = true;
+                    break;
+                }
+            }
+            if (!encontrada) {
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No tienes la carta: " + cartaElegida));
+                return;
+            }
+        }
+        Sala sala = cliente.getSalaActual();
+        for (String sobrante : copiaMano) {
+            sala.devolverCartaAlMazo(sobrante);
+        }
+        cliente.getCartasEnMano().clear();
+        cliente.getCartasEnMano().addAll(nuevaMano);
+
+        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " ha cabiado sus cartas con el Embajador."));
+        sala.siguienteTurno();
     }
 
     private boolean verificarTurno() {
