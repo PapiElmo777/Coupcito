@@ -82,6 +82,12 @@ public class ProcesadorComandos {
             case "/aceptar":
                 manejarAceptarMuerte();
                 break;
+                case "/continuar":
+                manejarContinuar();
+                break;
+            case "/desafiar":
+                manejarDesafio(partes);
+                break;
             default:
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido."));
         }
