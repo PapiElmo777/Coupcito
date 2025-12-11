@@ -672,21 +672,27 @@ private void manejarDesafio(String[] partes) {
             sala.broadcastSala(new Mensaje(Constantes.ESTADO, "La partida ha iniciado."));
         }
     }
-    private void manejarContinuar() {
+   private void manejarContinuar() {
         Sala sala = cliente.getSalaActual();
         if (sala == null || !sala.isEsperandoDesafio()) {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No hay ninguna acción pausada para continuar."));
             return;
         }
         
-        // Solo el jugador que está actuando debería poder forzar el continuar 
-        // (o podrías dejar que cualquiera lo haga si todos dicen "paso")
-        if (!sala.getJugadorAtacante().equals(cliente)) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Solo el jugador activo puede confirmar para continuar si nadie desafía."));
+     
+        
+        
+        
+        //  El atacante NO puede confirmar. Debe esperar a los demás.
+        if (sala.getJugadorAtacante().equals(cliente)) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "✋ No puedes validarte a ti mismo. Espera a que los demás decidan si te desafían o escriben /continuar."));
             return;
         }
 
-        sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> Nadie desafió. Se ejecuta la acción de " + cliente.getNombreJugador()));
+      
+        
+
+        sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + cliente.getNombreJugador() + " permite que la acción continúe (Nadie desafió)."));
         ejecutarAccionPendiente(sala);
     }
 
