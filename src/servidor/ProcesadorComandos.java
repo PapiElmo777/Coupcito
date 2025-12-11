@@ -288,8 +288,20 @@ public class ProcesadorComandos {
              ">> " + cliente.getNombreJugador() + " dice ser EMBAJADOR.\n" +
              "   Usa /desafiar o /continuar."));
     }
+    private void ejecutarEmbajador(HiloCliente actor) {
+  
+        Sala sala = actor.getSalaActual();
+        String c1 = sala.tomarCartaDelMazo();
+        String c2 = sala.tomarCartaDelMazo();
+        if (c1 != null && c2 != null) {
+            actor.agregarCarta(c1);
+            actor.agregarCarta(c2);
+            actor.enviarMensaje(new Mensaje(Constantes.ESTADO, "Selecciona cartas a conservar con /seleccionar ..."));
+          
+        }
+    }
 
-    
+
     private void finalizarEmbajador(String[] partes) {
         if (!verificarTurno()) return;
         List<String> manoActual = cliente.getCartasEnMano();
