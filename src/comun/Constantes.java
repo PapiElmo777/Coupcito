@@ -24,4 +24,7 @@ public class Constantes {
     public static final String ACCION_ROBAR = "Robar";
     public static final String ACCION_CAMBIO = "Cambio";
     public static final String ACCION_GOLPE = "Coup";
+public static final String COMANDO_DESAFIAR = "/desafiar";
+    public static final String COMANDO_CONTINUAR = "/continuar";
+
 }
