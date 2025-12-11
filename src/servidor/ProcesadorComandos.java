@@ -110,25 +110,29 @@ private void manejarDesafio(String[] partes) {
 
         sala.broadcastSala(new Mensaje(Constantes.ACCION, "!!! DESAFÍO !!! " + retador.getNombreJugador() + " desafía a " + acusado.getNombreJugador()));
 
-        if (tieneLaCarta) {
-            // CASO 1: EL ACUSADO DICE LA VERDAD
-            // El retador pierde una carta (castigo por bribon)
-            aplicarCastigo(retador, sala); 
-            
-           
-            acusado.perderCarta(cartaReclamada); 
-            sala.devolverCartaAlMazo(cartaReclamada);
-            String nueva = sala.tomarCartaDelMazo();
-            acusado.agregarCarta(nueva);
-            
-            sala.broadcastSala(new Mensaje(Constantes.ESTADO, 
-                ">> " + acusado.getNombreJugador() + " TENÍA la carta " + cartaReclamada + ".\n" +
-                ">> " + retador.getNombreJugador() + " rcambia su carta por una nueva."));
+      if (tieneLaCarta) {
+        // CASO 1: EL ACUSADO DICE LA VERDAD (Ganó el desafío)
+    
+        aplicarCastigo(retador, sala); 
 
-            
-            ejecutarAccionPendiente(sala);
+        acusado.getCartasEnMano().remove(cartaReclamada);
+        
+ 
+        sala.devolverCartaAlMazo(cartaReclamada);
+        
 
-        } else {
+        String nueva = sala.tomarCartaDelMazo();
+        acusado.agregarCarta(nueva);
+        
+        // Notificamos
+        sala.broadcastSala(new Mensaje(Constantes.ESTADO, 
+            ">> " + acusado.getNombreJugador() + " ENSEÑÓ LA CARTA: " + cartaReclamada + " (Era verdad).\n" +
+            ">> " + retador.getNombreJugador() + " pierde una vida por desafiar mal.\n" +
+            ">> " + acusado.getNombreJugador() + " baraja su carta y toma una nueva."));
+
+        ejecutarAccionPendiente(sala);
+
+    } else {
             // CASO 2: EL ACUSADO MENTÍA
             //  El acusado pierde una carta (castigo por bribon)
             aplicarCastigo(acusado, sala);
