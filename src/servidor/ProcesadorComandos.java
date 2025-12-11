@@ -244,41 +244,25 @@ public class ProcesadorComandos {
    
     private void asesinar(String[] partes) {
         if (!verificarTurno()) return;
-        Sala sala = cliente.getSalaActual();
-
-        if (sala.isEsperandoBloqueo()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Hay una acción pendiente de resolución."));
-            return;
-        }
-
         if (cliente.getMonedas() < 3) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Necesitas 3 monedas. Tienes: " + cliente.getMonedas()));
-            return;
+             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Faltan monedas (3).")); return;
         }
-        if (partes.length < 2) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /asesinar <nombre_jugador>"));
-            return;
-        }
+        Sala sala = cliente.getSalaActual();
+        HiloCliente victima = buscarObjetivo(sala, partes.length > 1 ? partes[1] : "");
+        if (victima == null) return;
 
-        String nombreVictima = partes[1];
-        HiloCliente victima = buscarObjetivo(sala, nombreVictima);
+    
+        cliente.sumarMonedas(-3); 
 
-        if (victima == null || !victima.isEstaVivo() || victima == cliente) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Objetivo inválido."));
-            return;
-        }
-        cliente.sumarMonedas(-3);
-        sala.setEsperandoBloqueo(true);
         sala.setJugadorAtacante(cliente);
         sala.setJugadorObjetivo(victima);
-        sala.setMonedasEnJuego(3);
-        sala.broadcastSala(new Mensaje(Constantes.ACCION,
-                ">> ¡" + cliente.getNombreJugador() + " quiere asesinar a " + victima.getNombreJugador() + "!\n" +
-                        ">> " + victima.getNombreJugador() + ", ¿tienes a la condesa? \n" +
-                        ">> Usa: /bloquear (si tienes Condesa o quieres mentir) \n" +
-                        ">> Usa: /aceptar (para morir con dignidad)"
-        ));
-        enviarEstadoActualizado(cliente);
+        sala.setCartaRequerida(Constantes.ASESINO);
+        sala.setAccionPendiente("ASESINAR");
+        sala.setEsperandoDesafio(true);
+
+        sala.broadcastSala(new Mensaje(Constantes.ACCION, 
+             ">> " + cliente.getNombreJugador() + " paga 3 y dice ser ASESINO contra " + victima.getNombreJugador() + ".\n" +
+             "   ¿Alguien duda que sea Asesino? (/desafiar) o (/continuar)"));
     }
     //embajador
     private void iniciarEmbajador() {
