@@ -378,12 +378,21 @@ public class ProcesadorComandos {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes bloquear ahora."));
             return;
         }
-        
+        sala.setEsperandoBloqueo(false);
+        sala.setCartaRequerida(Constantes.CONDESA);
+        sala.setAccionPendiente("BLOQUEO_CONDESA");
+        sala.setEsperandoDesafio(true);
         HiloCliente asesino = sala.getJugadorAtacante();
-        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> ¡" + cliente.getNombreJugador() + " bloquea con CONDESA! El asesinato falla."));
-        
-        limpiarEstadoAsesinato(sala);
-        sala.siguienteTurno();
+
+        asesino.enviarMensaje(new Mensaje(Constantes.ACCION,
+                ">> " + cliente.getNombreJugador() + " bloquea con Condesa.\n" +
+                        "¿El jugador dice que es Condesa? (/desafiar) o (/continuar)"));
+        for (HiloCliente j : sala.getJugadores()) {
+            if (!j.equals(asesino)) {
+                j.enviarMensaje(new Mensaje(Constantes.ESTADO,
+                        ">> " + cliente.getNombreJugador() + " dice tener Condesa. Esperando si el Asesino desafía..."));
+            }
+        }
     }
 
     private void manejarAceptarMuerte() {
