@@ -92,7 +92,12 @@ public class ProcesadorComandos {
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido."));
         }
     }
-
+private void manejarDesafio(String[] partes) {
+        Sala sala = cliente.getSalaActual();
+        if (sala == null || !sala.isEsperandoDesafio()) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No hay nada que desafiar ahora."));
+            return;
+        }
    
     private boolean bloquearPorRestricciones(String comando) {
         // Regla: Obligado a Coupear con 10 o más monedas
