@@ -93,28 +93,39 @@ public class ProcesadorComandos {
             ">> " + cliente.getNombreJugador() + " dice ser CAPITAN y quiere robar a " + victima.getNombreJugador() + ".\n" +
             "   (Esperando: /desafiar o /continuar)"));
     }
-
+//solo aparece el mensaje a las victimas
     private void anunciarAsesinato(String[] partes) {
         if (!verificarTurno()) return;
-        if (cliente.getMonedas() < 3) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Necesitas 3 monedas.")); return; }
-        if (partes.length < 2) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /asesinar <jugador>")); return; }
+        if (cliente.getMonedas() < 3) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Necesitas 3 monedas."));
+            return;
+        }
+        if (partes.length < 2) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /asesinar <jugador>"));
+            return;
+        }
 
         Sala sala = cliente.getSalaActual();
         HiloCliente victima = buscarObjetivo(sala, partes[1]);
-        
+
         if (victima == null || !victima.isEstaVivo() || victima == cliente) {
-             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Objetivo inválido.")); return;
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Objetivo inválido."));
+            return;
+        }
+        cliente.sumarMonedas(-3);
+        prepararEscenarioDesafio(sala, Constantes.ASESINO, "ASESINAR", victima);
+        String msgGeneral = ">> " + cliente.getNombreJugador() + " paga 3 y dice ser ASESINO contra " + victima.getNombreJugador() + ".";
+
+        for (HiloCliente j : sala.getJugadores()) {
+            if (j.equals(victima)) {
+                j.enviarMensaje(new Mensaje(Constantes.ACCION,
+                        msgGeneral + "\n   ¿Dudas que sea Asesino? (/desafiar) o (/continuar)"));
+            } else {
+                j.enviarMensaje(new Mensaje(Constantes.ACCION,
+                        msgGeneral + "\n   (Esperando: /desafiar o /continuar)"));
+            }
         }
 
-        // Pago por adelantado (Regla estándar: pagas al anunciar)
-        cliente.sumarMonedas(-3); 
-        
-        prepararEscenarioDesafio(sala, Constantes.ASESINO, "ASESINAR", victima);
-
-        sala.broadcastSala(new Mensaje(Constantes.ACCION, 
-             ">> " + cliente.getNombreJugador() + " paga 3 y dice ser ASESINO contra " + victima.getNombreJugador() + ".\n" +
-             "   ¿Alguien duda que sea Asesino? (/desafiar) o (/continuar)"));
-        
         enviarEstadoActualizado(cliente);
     }
 

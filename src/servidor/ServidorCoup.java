@@ -41,7 +41,8 @@ public class ServidorCoup {
         }
         return null;
     }
-    
-    // SE ELIMINARON: crearSala, buscarSala y obtenerListaSalasPublicas 
-    // Razón: Eran redundantes o código muerto. La lógica real está en GestorSalas.
+
+    //notita para mi terminal PapiElmo NO BORRARRRRRR!!!!!!
+    // cd /Users/alfredojimenez/IdeaProjects/Coupcito1/out/production/Coupcito
+    // java cliente.ClienteCoup
 }
