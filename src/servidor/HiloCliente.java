@@ -117,6 +117,15 @@ public class HiloCliente extends Thread {
             this.estaVivo = false;
         }
     }
+    public boolean tieneCarta(String cartaBuscada) {
+        if (cartasEnMano == null) return false;
+        for (String c : cartasEnMano) {
+            if (c.equalsIgnoreCase(cartaBuscada)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public void sumarMonedas(int cantidad) {
         this.monedas += cantidad;
