@@ -121,7 +121,7 @@ public class ProcesadorComandos {
         return false; // No hay bloqueos, puede continuar
     }
 
-    // --- EL RESTO DEL CÓDIGO SIGUE IGUAL ---
+    
 
     private void enviarEstadoActualizado(HiloCliente j) {
         if (j.getSalaActual() != null && j.getSalaActual().isEnJuego()) {
@@ -209,36 +209,39 @@ public class ProcesadorComandos {
     //capitan
     private void robar(String[] partes) {
         if (!verificarTurno()) return;
-        if (partes.length < 2) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /robar <jugador>"));
-            return;
-        }
+        if (partes.length < 2) return; 
+        
         Sala sala = cliente.getSalaActual();
         HiloCliente victima = buscarObjetivo(sala, partes[1]);
-
         if (victima == null || !victima.isEstaVivo() || victima == cliente) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Objetivo inválido."));
-            return;
+             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Objetivo inválido.")); return;
         }
 
+       
+        sala.setJugadorAtacante(cliente);
+        sala.setJugadorObjetivo(victima);
+        sala.setCartaRequerida(Constantes.CAPITAN);
+        sala.setAccionPendiente("ROBAR");
+        sala.setEsperandoDesafio(true);
+
+        sala.broadcastSala(new Mensaje(Constantes.ACCION, 
+            ">> " + cliente.getNombreJugador() + " dice ser CAPITAN y quiere robar a " + victima.getNombreJugador() + ".\n" +
+            "   Usa /desafiar o /continuar."));
+    }
+
+    private void ejecutarRobar(HiloCliente ladron, HiloCliente victima) {
         int monto = 2;
         if (victima.getMonedas() < 2) monto = victima.getMonedas();
-
         if (monto > 0) {
             victima.sumarMonedas(-monto);
-            cliente.sumarMonedas(monto);
-
-            sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " robó " + monto + " monedas a " + victima.getNombreJugador() + " porque es capitan."));
-            victima.enviarMensaje(new Mensaje(Constantes.ESTADO, "¡TE HAN ROBADO " + monto + " MONEDAS!"));
-            enviarEstadoActualizado(cliente);
-            enviarEstadoActualizado(victima);
-        } else {
-            sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " intentó robar a " + victima.getNombreJugador() + " pero no tiene dinero."));
-            enviarEstadoActualizado(cliente);
+            ladron.sumarMonedas(monto);
+            ladron.getSalaActual().broadcastSala(new Mensaje(Constantes.ACCION, ">> Robo exitoso: " + monto + " monedas."));
         }
-        sala.siguienteTurno();
+        enviarEstadoActualizado(ladron);
+        enviarEstadoActualizado(victima);
+        ladron.getSalaActual().siguienteTurno();
     }
-    //asesina y accion condesa
+   
     private void asesinar(String[] partes) {
         if (!verificarTurno()) return;
         Sala sala = cliente.getSalaActual();
@@ -655,7 +658,17 @@ public class ProcesadorComandos {
                  sala.siguienteTurno();
                  break;
         }
+
+        
     }
+    
+    private void ejecutarTomarTres(HiloCliente actor) {
+        actor.sumarMonedas(3);
+        actor.getSalaActual().broadcastSala(new Mensaje(Constantes.ACCION, ">> " + actor.getNombreJugador() + " toma 3 monedas (Duque exitoso)."));
+        enviarEstadoActualizado(actor);
+        actor.getSalaActual().siguienteTurno();
+    }
+    
     
     private void mostrarMenuPrincipal() {
         if (cliente.getSalaActual() == null) {
