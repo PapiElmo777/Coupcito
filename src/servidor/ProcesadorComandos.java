@@ -4,7 +4,6 @@ import comun.Constantes;
 import comun.Mensaje;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class ProcesadorComandos {
     private final HiloCliente cliente;
@@ -19,177 +18,98 @@ public class ProcesadorComandos {
         String[] partes = texto.trim().split("\\s+");
         String comando = partes[0];
 
+        // Bloqueo si tienes más de 10 monedas o cartas de embajador pendientes
         if (bloquearPorRestricciones(comando)) {
             return;
         }
 
         switch (comando) {
             // --- GESTIÓN DE CUENTA Y SALAS ---
-            case "/registrar":
-                manejarRegistro(partes);
-                break;
-            case "/login":
-                manejarLogin(partes);
-                break;
-            case "/crear":
-                manejarCrearSala(partes);
-                break;
-            case "/unir":
-                manejarUnirse(partes);
-                break;
-            case "/lista":
-                manejarListarSalas();
-                break;
-            case "/salir":
-                manejarSalir();
-                break;
-            case "/salir_sala":
-                manejarSalirDeSalaAlLobby();
-                break;
-            case "/iniciar":
-                manejarIniciarPartida();
-                break;
+            case "/registrar": manejarRegistro(partes); break;
+            case "/login": manejarLogin(partes); break;
+            case "/crear": manejarCrearSala(partes); break;
+            case "/unir": manejarUnirse(partes); break;
+            case "/lista": manejarListarSalas(); break;
+            case "/salir": manejarSalir(); break;
+            case "/salir_sala": manejarSalirDeSalaAlLobby(); break;
+            case "/iniciar": manejarIniciarPartida(); break;
 
-            // --- ACCIONES SIMPLES (Sin desafío) ---
-            case "/tomar_moneda":
-                tomarUnaMoneda();
-                break;
-            case "/dos_monedas":
-                tomarDos();
-                break;
-            case "/coupear":
-                coupear(partes);
-                break;
+            // --- ACCIONES DIRECTAS (No desafiables) ---
+            case "/tomar_moneda": tomarUnaMoneda(); break;
+            case "/dos_monedas": tomarDos(); break;
+            case "/coupear": coupear(partes); break;
 
-            // --- ACCIONES DESAFIABLES (MENTIRAS) ---
-       
-            case "/soy_duque": 
-                tomarTres();
-                break;
-            case "/robar":     
-                robar(partes);
-                break;
-            case "/asesinar":  
-                asesinar(partes);
-                break;
-            case "/embajador": 
-                iniciarEmbajador();
-                break;
+            // --- ACCIONES CON ROL (Anuncios / Mentiras) ---
+            // Estos métodos SOLO anuncian. No ejecutan la acción todavía.
+            case "/soy_duque": anunciarDuque(); break;
+            case "/robar": anunciarRobo(partes); break;
+            case "/asesinar": anunciarAsesinato(partes); break;
+            case "/embajador": anunciarEmbajador(); break;
 
-            // --- RESOLUCIÓN DE ESTADOS ---
-            case "/continuar": // Confirmar que nadie desafía
-                manejarContinuar();
-                break;
-            case "/desafiar":  // Desafiar una mentira
-                manejarDesafio(partes);
-                break;
-            case "/bloquear":  // Bloqueo de Condesa
-                manejarBloqueoCondesa();
-                break;
-            case "/aceptar":   // Aceptar muerte por Asesino
-                manejarAceptarMuerte();
-                break;
-            case "/seleccionar": // Selección de cartas Embajador
-                finalizarEmbajador(partes);
-                break;
+            // --- RESOLUCIÓN DE DESAFÍOS ---
+            case "/continuar": manejarContinuar(); break; // Confirmar acción
+            case "/desafiar": manejarDesafio(partes); break; // Acusar mentira
+
+            // --- RESPUESTAS ESPECÍFICAS (Condesa / Embajador / Muerte) ---
+            case "/bloquear": manejarBloqueoCondesa(); break;
+            case "/aceptar": manejarAceptarMuerte(); break;
+            case "/seleccionar": finalizarEmbajador(partes); break;
 
             default:
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido."));
         }
     }
 
-    
-    //   ACCIONES INICIALES 
+    // ================================================================
+    //   1. FASE DE ANUNCIO (Bluffing)
+    //   Aquí se pausa el juego esperando "/desafiar" o "/continuar"
+    // ================================================================
 
-
-    private void tomarUnaMoneda() {
-        if (!verificarTurno()) return;
-        cliente.sumarMonedas(1);
-        Sala sala = cliente.getSalaActual();
-        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " tomó 1 moneda."));
-        enviarEstadoActualizado(cliente);
-        sala.siguienteTurno();
-    }
-
-    private void tomarDos() {
-        if (!verificarTurno()) return;
-        cliente.sumarMonedas(2);
-        Sala sala = cliente.getSalaActual();
-        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " tomó 2 monedas (Ayuda Exterior)."));
-        enviarEstadoActualizado(cliente);
-        sala.siguienteTurno();
-    }
-
-    private void tomarTres() {
+    private void anunciarDuque() {
         if (!verificarTurno()) return;
         Sala sala = cliente.getSalaActual();
 
-        sala.setJugadorAtacante(cliente);
-        sala.setCartaRequerida(Constantes.DUQUE);
-        sala.setAccionPendiente("TOMAR_3");
-        sala.setEsperandoDesafio(true);
-
+        prepararEscenarioDesafio(sala, Constantes.DUQUE, "TOMAR_3", null);
+        
         sala.broadcastSala(new Mensaje(Constantes.ACCION, 
             ">> " + cliente.getNombreJugador() + " dice ser DUQUE y quiere tomar 3 monedas.\n" +
-            "   Usa /desafiar o el jugador OBJETIVO/OTROS usa /continuar si nadie desafía."));
+            "   (Esperando: /desafiar o /continuar)"));
     }
 
-    private void robar(String[] partes) {
+    private void anunciarRobo(String[] partes) {
         if (!verificarTurno()) return;
-        if (partes.length < 2) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /robar <jugador>"));
-            return;
-        }
+        if (partes.length < 2) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /robar <jugador>")); return; }
+        
         Sala sala = cliente.getSalaActual();
         HiloCliente victima = buscarObjetivo(sala, partes[1]);
-
+        
         if (victima == null || !victima.isEstaVivo() || victima == cliente) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Objetivo inválido."));
-            return;
+             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Objetivo inválido.")); return;
         }
 
-        sala.setJugadorAtacante(cliente);
-        sala.setJugadorObjetivo(victima);
-        sala.setCartaRequerida(Constantes.CAPITAN);
-        sala.setAccionPendiente("ROBAR");
-        sala.setEsperandoDesafio(true);
+        prepararEscenarioDesafio(sala, Constantes.CAPITAN, "ROBAR", victima);
 
         sala.broadcastSala(new Mensaje(Constantes.ACCION, 
             ">> " + cliente.getNombreJugador() + " dice ser CAPITAN y quiere robar a " + victima.getNombreJugador() + ".\n" +
-            "   Usa /desafiar o /continuar."));
+            "   (Esperando: /desafiar o /continuar)"));
     }
 
-    private void asesinar(String[] partes) {
+    private void anunciarAsesinato(String[] partes) {
         if (!verificarTurno()) return;
+        if (cliente.getMonedas() < 3) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Necesitas 3 monedas.")); return; }
+        if (partes.length < 2) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /asesinar <jugador>")); return; }
+
         Sala sala = cliente.getSalaActual();
-
-        if (sala.isEsperandoBloqueo()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Hay una acción pendiente de resolución."));
-            return;
-        }
-        if (cliente.getMonedas() < 3) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Necesitas 3 monedas. Tienes: " + cliente.getMonedas()));
-            return;
-        }
-        if (partes.length < 2) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /asesinar <nombre_jugador>"));
-            return;
-        }
-
         HiloCliente victima = buscarObjetivo(sala, partes[1]);
+        
         if (victima == null || !victima.isEstaVivo() || victima == cliente) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Objetivo inválido."));
-            return;
+             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Objetivo inválido.")); return;
         }
 
-        // Se pagan las monedas al anunciar
-        cliente.sumarMonedas(-3);
-
-        sala.setJugadorAtacante(cliente);
-        sala.setJugadorObjetivo(victima);
-        sala.setCartaRequerida(Constantes.ASESINO);
-        sala.setAccionPendiente("ASESINAR");
-        sala.setEsperandoDesafio(true);
+        // Pago por adelantado (Regla estándar: pagas al anunciar)
+        cliente.sumarMonedas(-3); 
+        
+        prepararEscenarioDesafio(sala, Constantes.ASESINO, "ASESINAR", victima);
 
         sala.broadcastSala(new Mensaje(Constantes.ACCION, 
              ">> " + cliente.getNombreJugador() + " paga 3 y dice ser ASESINO contra " + victima.getNombreJugador() + ".\n" +
@@ -198,65 +118,40 @@ public class ProcesadorComandos {
         enviarEstadoActualizado(cliente);
     }
 
-    private void iniciarEmbajador() {
+    private void anunciarEmbajador() {
         if (!verificarTurno()) return;
         Sala sala = cliente.getSalaActual();
-        
-        sala.setJugadorAtacante(cliente);
-        sala.setCartaRequerida(Constantes.EMBAJADOR);
-        sala.setAccionPendiente("EMBAJADOR");
-        sala.setEsperandoDesafio(true);
+
+        prepararEscenarioDesafio(sala, Constantes.EMBAJADOR, "EMBAJADOR", null);
 
         sala.broadcastSala(new Mensaje(Constantes.ACCION, 
             ">> " + cliente.getNombreJugador() + " dice ser EMBAJADOR.\n" +
-            "   Usa /desafiar o /continuar."));
+            "   (Esperando: /desafiar o /continuar)"));
     }
 
-    private void coupear(String[] partes) {
-        if (!verificarTurno()) return;
-        Sala sala = cliente.getSalaActual();
-        if (cliente.getMonedas() < 7) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Necesitas 7 monedas para coupear."));
-            return;
-        }
-        if (partes.length < 2) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /coupear <nombre_jugador>"));
-            return;
-        }
-        HiloCliente victima = buscarObjetivo(sala, partes[1]);
-        if (victima == null || !victima.isEstaVivo() || victima == cliente) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Objetivo inválido."));
-            return;
-        }
-
-        cliente.sumarMonedas(-7);
-        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> ¡" + cliente.getNombreJugador() + " hizo un COUP a " + victima.getNombreJugador() + "!"));
-        
-        String cartaPerdida = victima.getCartasEnMano().get(0);
-        victima.perderCarta(cartaPerdida);
-        sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + victima.getNombreJugador() + " perdió su carta: " + cartaPerdida));
-        
-        if (!victima.isEstaVivo()) {
-            sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + victima.getNombreJugador() + " ha sido ELIMINADO."));
-        }
-        enviarEstadoActualizado(cliente);
-        enviarEstadoActualizado(victima);
-        sala.siguienteTurno();
+    // Método auxiliar para no repetir código de configuración
+    private void prepararEscenarioDesafio(Sala sala, String carta, String accion, HiloCliente objetivo) {
+        sala.setJugadorAtacante(cliente);
+        sala.setJugadorObjetivo(objetivo);
+        sala.setCartaRequerida(carta);
+        sala.setAccionPendiente(accion);
+        sala.setEsperandoDesafio(true);
     }
 
-    
-    //   LÓGICA DE DESAFÍOS
-    
+    // ================================================================
+    //   2. RESOLUCIÓN DE DESAFÍOS Y CONTINUACIÓN
+    // ================================================================
+
     private void manejarContinuar() {
         Sala sala = cliente.getSalaActual();
         if (sala == null || !sala.isEsperandoDesafio()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No hay ninguna acción pausada para continuar."));
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No hay acción pausada."));
             return;
         }
-        
-        // El atacante NO puede auto-confirmarse. Debe esperar a los demás.
+
+        // FIX: El atacante NO puede validarse a sí mismo
         if (sala.getJugadorAtacante().equals(cliente)) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "✋ Tú eres el atacante. Espera a que los demás confirmen con /continuar o te desafíen."));
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "✋ Tú eres el atacante. Espera a que los demás confirmen."));
             return;
         }
 
@@ -267,10 +162,10 @@ public class ProcesadorComandos {
     private void manejarDesafio(String[] partes) {
         Sala sala = cliente.getSalaActual();
         if (sala == null || !sala.isEsperandoDesafio()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No hay nada que desafiar ahora."));
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No hay nada que desafiar."));
             return;
         }
-        
+
         HiloCliente acusado = sala.getJugadorAtacante(); 
         HiloCliente retador = cliente; 
 
@@ -288,9 +183,10 @@ public class ProcesadorComandos {
             // --- EL ACUSADO DICE LA VERDAD ---
             aplicarCastigo(retador, sala); // Retador pierde vida
             
-            // Cambiamos la carta manualmente para que no muera si tiene 1 vida
             sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + acusado.getNombreJugador() + " ENSEÑA LA CARTA: " + cartaReclamada));
             
+            // FIX CRÍTICO: Cambio de carta manual.
+            // No usamos perderCarta() porque si tiene 1 vida lo mataría antes de darle la nueva.
             acusado.getCartasEnMano().remove(cartaReclamada); 
             sala.devolverCartaAlMazo(cartaReclamada);
             String nueva = sala.tomarCartaDelMazo();
@@ -298,7 +194,7 @@ public class ProcesadorComandos {
             
             sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + acusado.getNombreJugador() + " baraja y toma carta nueva."));
 
-         
+            // El desafío falló para el retador, así que la acción original PROCEDE
             ejecutarAccionPendiente(sala);
 
         } else {
@@ -309,110 +205,128 @@ public class ProcesadorComandos {
                 ">> ¡CACHADO! " + acusado.getNombreJugador() + " NO tenía " + cartaReclamada + ".\n" +
                 ">> La acción ha sido CANCELADA."));
 
-            // Limpieza
             sala.limpiarEstadoDesafio();
             limpiarEstadoAsesinato(sala); 
             
-            // Como la acción falló, debemos pasar el turno AQUÍ manualmente
+            // FIX CRÍTICO: Como la acción se canceló, el turno DEBE pasar aquí manualmente.
+            // Si no ponemos esto, el juego se queda esperando eternamente.
             sala.siguienteTurno();
         }
     }
 
-    private void aplicarCastigo(HiloCliente perdedor, Sala sala) {
-        if (perdedor.getCartasEnMano().isEmpty()) return;
-        // Pierde la primera carta automáticamente
-        String cartaPerdida = perdedor.getCartasEnMano().get(0);
-        perdedor.perderCarta(cartaPerdida);
-        sala.devolverCartaAlMazo(cartaPerdida); 
-        
-        sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + perdedor.getNombreJugador() + " ha perdido la carta: " + cartaPerdida));
-        
-        if (!perdedor.isEstaVivo()) {
-            sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> JUGADOR ELIMINADO: " + perdedor.getNombreJugador()));
-        }
-        enviarEstadoActualizado(perdedor);
-    }
+    // ================================================================
+    //   3. EJECUCIÓN REAL (Post-Validación)
+    // ================================================================
 
     private void ejecutarAccionPendiente(Sala sala) {
         String accion = sala.getAccionPendiente();
-        sala.limpiarEstadoDesafio(); 
-
-        if (accion == null) return; 
+        sala.limpiarEstadoDesafio(); // Limpiamos banderas de desafío
+        
+        if (accion == null) return;
 
         switch (accion) {
             case "TOMAR_3":
-                ejecutarTomarTres(sala.getJugadorAtacante());
+                HiloCliente duque = sala.getJugadorAtacante();
+                duque.sumarMonedas(3);
+                sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + duque.getNombreJugador() + " toma 3 monedas (Duque exitoso)."));
+                enviarEstadoActualizado(duque);
+                sala.siguienteTurno();
                 break;
+
             case "ROBAR":
-                ejecutarRobar(sala.getJugadorAtacante(), sala.getJugadorObjetivo());
+                HiloCliente ladron = sala.getJugadorAtacante();
+                HiloCliente victima = sala.getJugadorObjetivo();
+                int monto = 2;
+                if (victima.getMonedas() < 2) monto = victima.getMonedas();
+                
+                if (monto > 0) {
+                    victima.sumarMonedas(-monto);
+                    ladron.sumarMonedas(monto);
+                    sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> Robo exitoso: " + ladron.getNombreJugador() + " roba " + monto + " a " + victima.getNombreJugador()));
+                } else {
+                    sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> El robo falló porque la víctima no tiene dinero."));
+                }
+                enviarEstadoActualizado(ladron);
+                enviarEstadoActualizado(victima);
+                sala.siguienteTurno();
                 break;
+
             case "ASESINAR":
-                ejecutarAsesinar(sala.getJugadorAtacante(), sala.getJugadorObjetivo());
+                // Aquí NO se mata todavía. Se abre la ventana para que la Condesa bloquee.
+                sala.setEsperandoBloqueo(true); 
+                sala.setMonedasEnJuego(3);
+                sala.broadcastSala(new Mensaje(Constantes.ACCION,
+                    ">> ¡Nadie dudó del Asesino! " + sala.getJugadorObjetivo().getNombreJugador() + ", ¿tienes a la Condesa?\n" +
+                    ">> /bloquear (si tienes Condesa) o /aceptar"));
+                // NOTA: No pasamos turno aquí. Esperamos respuesta de la víctima.
                 break;
+
             case "EMBAJADOR":
-                ejecutarEmbajador(sala.getJugadorAtacante());
+                HiloCliente embajador = sala.getJugadorAtacante();
+                String c1 = sala.tomarCartaDelMazo();
+                String c2 = sala.tomarCartaDelMazo();
+                if (c1 != null && c2 != null) {
+                    embajador.agregarCarta(c1);
+                    embajador.agregarCarta(c2);
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("--- INTERCAMBIO DE EMBAJADOR ---\n");
+                    sb.append("Has tomado: ").append(c1).append(" y ").append(c2).append("\n");
+                    sb.append("Usa: /seleccionar <carta1> [carta2] para quedarte con ellas.");
+                    embajador.enviarMensaje(new Mensaje(Constantes.ESTADO, sb.toString()));
+                }
+                // NOTA: No pasamos turno aquí. Esperamos /seleccionar.
                 break;
         }
     }
 
-   
-    private void ejecutarTomarTres(HiloCliente actor) {
-        actor.sumarMonedas(3);
-        actor.getSalaActual().broadcastSala(new Mensaje(Constantes.ACCION, ">> " + actor.getNombreJugador() + " toma 3 monedas (Duque exitoso)."));
-        enviarEstadoActualizado(actor);
-        actor.getSalaActual().siguienteTurno();
+    // ================================================================
+    //   4. OTRAS MECÁNICAS DE JUEGO
+    // ================================================================
+
+    private void tomarUnaMoneda() {
+        if (!verificarTurno()) return;
+        cliente.sumarMonedas(1);
+        cliente.getSalaActual().broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " tomó 1 moneda."));
+        enviarEstadoActualizado(cliente);
+        cliente.getSalaActual().siguienteTurno();
     }
 
-    private void ejecutarRobar(HiloCliente ladron, HiloCliente victima) {
-        int monto = 2;
-        if (victima.getMonedas() < 2) monto = victima.getMonedas();
-        if (monto > 0) {
-            victima.sumarMonedas(-monto);
-            ladron.sumarMonedas(monto);
-            ladron.getSalaActual().broadcastSala(new Mensaje(Constantes.ACCION, ">> Robo exitoso: " + monto + " monedas transferidas."));
-        }
-        enviarEstadoActualizado(ladron);
-        enviarEstadoActualizado(victima);
-        ladron.getSalaActual().siguienteTurno();
+    private void tomarDos() {
+        if (!verificarTurno()) return;
+        cliente.sumarMonedas(2);
+        cliente.getSalaActual().broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " tomó 2 monedas (Ayuda Exterior)."));
+        enviarEstadoActualizado(cliente);
+        cliente.getSalaActual().siguienteTurno();
     }
 
-    private void ejecutarAsesinar(HiloCliente asesino, HiloCliente victima) {
-        Sala sala = asesino.getSalaActual();
-        // El desafío del Asesino pasó, ahora activamos bloqueo de Condesa
-        sala.setEsperandoBloqueo(true); 
-        sala.setMonedasEnJuego(3);
+    private void coupear(String[] partes) {
+        if (!verificarTurno()) return;
+        Sala sala = cliente.getSalaActual();
+        if (cliente.getMonedas() < 7) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Necesitas 7 monedas.")); return; }
+        if (partes.length < 2) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /coupear <jugador>")); return; }
         
-        sala.broadcastSala(new Mensaje(Constantes.ACCION,
-            ">> ¡Nadie dudó del Asesino! " + victima.getNombreJugador() + ", ¿tienes a la Condesa?\n" +
-            ">> /bloquear (si tienes Condesa) o /aceptar"));
-            
-       
-    }
-
-    private void ejecutarEmbajador(HiloCliente actor) {
-        Sala sala = actor.getSalaActual();
-        String c1 = sala.tomarCartaDelMazo();
-        String c2 = sala.tomarCartaDelMazo();
-        if (c1 != null && c2 != null) {
-            actor.agregarCarta(c1);
-            actor.agregarCarta(c2);
-            StringBuilder sb = new StringBuilder();
-            sb.append("--- INTERCAMBIO DE EMBAJADOR ---\n");
-            sb.append("Has tomado: ").append(c1).append(" y ").append(c2).append("\n");
-            sb.append("Usa: /seleccionar <carta1> [carta2] para quedarte con ellas.");
-            actor.enviarMensaje(new Mensaje(Constantes.ESTADO, sb.toString()));
+        HiloCliente victima = buscarObjetivo(sala, partes[1]);
+        if (victima == null || !victima.isEstaVivo() || victima == cliente) {
+             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Objetivo inválido.")); return;
         }
-        // No pasamos turno, esperamos a /seleccionar
+
+        cliente.sumarMonedas(-7);
+        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> ¡" + cliente.getNombreJugador() + " hizo un COUP a " + victima.getNombreJugador() + "!"));
+        aplicarCastigo(victima, sala); // El Coup es daño inevitable
+        
+        enviarEstadoActualizado(cliente);
+        enviarEstadoActualizado(victima);
+        sala.siguienteTurno();
     }
 
     private void finalizarEmbajador(String[] partes) {
         if (!verificarTurno()) return;
         List<String> manoActual = cliente.getCartasEnMano();
-        if (manoActual.size() <= 2) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No estás en medio de un intercambio de Embajador."));
-            return;
-        }
         int cartasAConservar = manoActual.size() - 2;
+        
+        if (cartasAConservar < 0) { 
+             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No estás en modo Embajador.")); return;
+        }
         if (partes.length - 1 != cartasAConservar) {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Debes seleccionar exactamente " + cartasAConservar + " carta(s)."));
             return;
@@ -444,13 +358,24 @@ public class ProcesadorComandos {
         cliente.getCartasEnMano().clear();
         cliente.getCartasEnMano().addAll(nuevaMano);
 
-        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " ha cambiado sus cartas con el Embajador."));
+        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " completó el Embajador."));
         enviarEstadoActualizado(cliente);
         sala.siguienteTurno();
     }
 
-
-    //   CONDESA
+    private void manejarBloqueoCondesa() {
+        Sala sala = cliente.getSalaActual();
+        if (!sala.isEsperandoBloqueo() || !sala.getJugadorObjetivo().equals(cliente)) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes bloquear ahora."));
+            return;
+        }
+        
+        HiloCliente asesino = sala.getJugadorAtacante();
+        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> ¡" + cliente.getNombreJugador() + " bloquea con CONDESA! El asesinato falla."));
+        
+        limpiarEstadoAsesinato(sala);
+        sala.siguienteTurno();
+    }
 
     private void manejarAceptarMuerte() {
         Sala sala = cliente.getSalaActual();
@@ -458,36 +383,62 @@ public class ProcesadorComandos {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No tienes nada que aceptar."));
             return;
         }
-        HiloCliente victima = cliente;
-        String cartaPerdida = victima.getCartasEnMano().get(0);
-        victima.perderCarta(cartaPerdida);
-        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + victima.getNombreJugador() + " acepta su destino y pierde: " + cartaPerdida));
-        if (!victima.isEstaVivo()) {
-            sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + victima.getNombreJugador() + " ha sido ELIMINADO."));
-        }
-        enviarEstadoActualizado(victima);
+        
+        aplicarCastigo(cliente, sala);
         limpiarEstadoAsesinato(sala);
         sala.siguienteTurno();
     }
 
-    private void manejarBloqueoCondesa() {
-        Sala sala = cliente.getSalaActual();
-        if (!sala.isEsperandoBloqueo()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No hay ningún ataque que bloquear."));
-            return;
-        }
-        if (!sala.getJugadorObjetivo().equals(cliente)) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "¡No te están atacando a ti!"));
-            return;
-        }
-        HiloCliente asesino = sala.getJugadorAtacante();
-        sala.broadcastSala(new Mensaje(Constantes.ACCION,
-                ">> ¡" + cliente.getNombreJugador() + " ha bloqueado el asesinato porque es la Condesa!"));
-        sala.broadcastSala(new Mensaje(Constantes.ESTADO,
-                ">> El asesinato ha fallado. " + asesino.getNombreJugador() + " pierde sus 3 monedas."));
+    // ================================================================
+    //   5. UTILIDADES (Castigo, Turnos, Validaciones)
+    // ================================================================
+
+    private void aplicarCastigo(HiloCliente perdedor, Sala sala) {
+        if (perdedor.getCartasEnMano().isEmpty()) return;
         
-        limpiarEstadoAsesinato(sala);
-        sala.siguienteTurno();
+        // Pierde la primera carta (Simplificación)
+        String cartaPerdida = perdedor.getCartasEnMano().get(0);
+        perdedor.perderCarta(cartaPerdida);
+        sala.devolverCartaAlMazo(cartaPerdida);
+        
+        sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + perdedor.getNombreJugador() + " pierde una vida (" + cartaPerdida + ")."));
+        
+        if (!perdedor.isEstaVivo()) {
+            sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> JUGADOR ELIMINADO: " + perdedor.getNombreJugador()));
+        }
+        enviarEstadoActualizado(perdedor);
+    }
+
+    private boolean bloquearPorRestricciones(String comando) {
+        if (cliente.getMonedas() >= 10) {
+            boolean permitido = comando.equals("/coupear") || comando.equals("/salir") || comando.equals("/salir_sala");
+            if (!permitido) {
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "¡Tienes 10+ monedas! Estás OBLIGADO a usar /coupear <jugador>."));
+                return true;
+            }
+        }
+        if (cliente.getCartasEnMano().size() > 2) {
+            if (!comando.startsWith("/seleccionar")) {
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Usa /seleccionar para devolver las cartas extra."));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean verificarTurno() {
+        Sala sala = cliente.getSalaActual();
+        if (sala == null || !sala.isEnJuego()) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No hay partida activa.")); return false; }
+        if (!sala.esTurnoDe(cliente)) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "¡No es tu turno!")); return false; }
+        if (sala.isEsperandoDesafio() || sala.isEsperandoBloqueo()) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Hay una acción pendiente. Espera.")); return false; }
+        return true;
+    }
+
+    private HiloCliente buscarObjetivo(Sala sala, String nombre) {
+        for (HiloCliente j : sala.getJugadores()) {
+            if (j.getNombreJugador().equalsIgnoreCase(nombre)) return j;
+        }
+        return null;
     }
 
     private void limpiarEstadoAsesinato(Sala sala) {
@@ -497,298 +448,92 @@ public class ProcesadorComandos {
         sala.setMonedasEnJuego(0);
     }
 
-   
-    //   VALIDACIONES Y AUXILIARES
-   
-
-    private boolean bloquearPorRestricciones(String comando) {
-        // Regla: Obligado a Coupear con 10 o más monedas
-        if (cliente.getMonedas() >= 10) {
-            boolean esComandoPermitido = comando.equals("/coupear") ||
-                    comando.equals("/estado") ||
-                    comando.equals("/salir") ||
-                    comando.equals("/salir_sala");
-
-            if (!esComandoPermitido) {
-                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
-                        "¡TIENES " + cliente.getMonedas() + " MONEDAS! \n" +
-                                "Estás OBLIGADO a Coupear.\n" +
-                                "Usa: /coupear <jugador>"));
-                return true; 
-            }
-        }
-        // Regla: Embajador (exceso de cartas)
-        if (cliente.getCartasEnMano().size() > 2) {
-            if (!comando.startsWith("/seleccionar")) {
-                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
-                        "Debes usar /seleccionar <carta1> [carta2] para continuar el juego"));
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean verificarTurno() {
-        Sala sala = cliente.getSalaActual();
-        if (sala == null || !sala.isEnJuego()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No estás en una partida activa."));
-            return false;
-        }
-        if (!sala.esTurnoDe(cliente)) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "¡No es tu turno!"));
-            return false;
-        }
-        if (sala.isEsperandoBloqueo()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Hay una acción pendiente de resolución (Asesinato). Espera."));
-            return false;
-        }
-        if (sala.isEsperandoDesafio()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Se está esperando un desafío o continuación."));
-            return false;
-        }
-        return true;
-    }
-
-    private HiloCliente buscarObjetivo(Sala sala, String nombreObjetivo) {
-        for (HiloCliente j : sala.getJugadores()) {
-            if (j.getNombreJugador().equalsIgnoreCase(nombreObjetivo)) {
-                return j;
-            }
-        }
-        return null;
-    }
-
     private void enviarEstadoActualizado(HiloCliente j) {
         if (j.getSalaActual() != null && j.getSalaActual().isEnJuego()) {
-            j.enviarMensaje(new Mensaje(Constantes.ESTADO,
-                    "TUS DATOS | Monedas: " + j.getMonedas() + " | Cartas: " + j.getCartasEnMano()));
+            j.enviarMensaje(new Mensaje(Constantes.ESTADO, "TUS DATOS | Monedas: " + j.getMonedas() + " | Cartas: " + j.getCartasEnMano()));
         }
     }
 
-    private void manejarSalirDeSalaAlLobby() {
-        Sala sala = cliente.getSalaActual();
-        if (sala != null) {
-            sala.removerJugador(cliente);
-            if (sala.getJugadores().isEmpty()) {
-                GestorSalas.getInstancia().eliminarSala(sala);
-            }
-            cliente.setSalaActual(null);
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Has salido de la sala."));
-            mostrarMenuPrincipal();
-        } else {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No estás en ninguna sala."));
-        }
+    // ================================================================
+    //   6. GESTIÓN DE SALA Y LOBBY (Login, Registro, etc)
+    // ================================================================
+
+    private void manejarRegistro(String[] p) {
+        if (cliente.isAutenticado()) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya iniciaste sesión.")); return; }
+        if (p.length != 4 || !p[2].equals(p[3])) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /registrar <uValido> <pValido> <pValido>")); return; }
+        if (BaseDatos.registrarUsuario(p[1], p[2])) cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Registrado."));
+        else cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Error al registrar."));
     }
 
-    private void manejarRegistro(String[] partes) {
-        if (cliente.isAutenticado()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya has iniciado sesión."));
-            return;
-        }
-        if (partes.length != 4) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /registrar <usuario> <pass> <confirm>"));
-            return;
-        }
-        String user = partes[1];
-        String pass = partes[2];
-        String confirm = partes[3];
-
-        if (!Pattern.matches(REST_USUARIO, user)) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Usuario inválido (6-12 carácteres)."));
-            return;
-        }
-        if (!Pattern.matches(REST_PASS, pass)) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Contraseña inválida (6-12 carácteres)."));
-            return;
-        }
-        if (!pass.equals(confirm)) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Las contraseñas no coinciden."));
-            return;
-        }
-
-        if (BaseDatos.registrarUsuario(user, pass)) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Registro exitoso. Ahora usa /login."));
-        } else {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "El usuario ya existe."));
-        }
-    }
-
-    private void manejarLogin(String[] partes) {
-        if (cliente.isAutenticado()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya has iniciado sesión."));
-            return;
-        }
-        if (partes.length < 3) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /login <usuario> <pass>"));
-            return;
-        }
-        String user = partes[1];
-        String pass = partes[2];
-
-        if (ServidorCoup.buscarClientePorNombre(user) != null) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Error: El usuario '" + user + "' ya está conectado."));
-            return;
-        }
-
-        if (BaseDatos.validarLogin(user, pass)) {
-            cliente.setNombreJugador(user);
+    private void manejarLogin(String[] p) {
+        if (cliente.isAutenticado()) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya conectado.")); return; }
+        if (p.length < 3) return;
+        if (ServidorCoup.buscarClientePorNombre(p[1]) != null) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Usuario ya conectado.")); return; }
+        if (BaseDatos.validarLogin(p[1], p[2])) {
+            cliente.setNombreJugador(p[1]);
             cliente.setAutenticado(true);
             ServidorCoup.clientesConectados.add(cliente);
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Bienvenido " + user));
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Bienvenido " + p[1]));
             mostrarMenuPrincipal();
-        } else {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Credenciales incorrectas."));
-        }
+        } else cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Login fallido."));
     }
 
-    private void manejarCrearSala(String[] partes) {
-        if (!cliente.isAutenticado()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Debes iniciar sesión primero."));
-            return;
-        }
-        if (cliente.getSalaActual() != null) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya estás en una sala."));
-            return;
-        }
-        int capacidad = 6;
-        boolean privada = false;
-        if (partes.length > 1) {
-            String arg1 = partes[1];
-            if (arg1.matches("\\d+")) {
-                capacidad = Integer.parseInt(arg1);
-                if (capacidad < 2 || capacidad > 6) {
-                    cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "La sala debe ser de entre 2 y 6 jugadores."));
-                    return;
-                }
-            } else if (arg1.equalsIgnoreCase("privada")) {
-                privada = true;
-            }
-        }
-        if (partes.length > 2 && partes[2].equalsIgnoreCase("privada")) {
-            privada = true;
-        }
-
-        Sala nueva = GestorSalas.getInstancia().crearSala(cliente, capacidad, privada);
-        cliente.setSalaActual(nueva);
-        String tipo = privada ? "Privada" : "Pública";
-        cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Sala creada (" + tipo + ") para " + capacidad + " jugadores. ID: " + nueva.getId()));
+    private void manejarCrearSala(String[] p) {
+        if (!cliente.isAutenticado() || cliente.getSalaActual() != null) return;
+        int cap = 6; boolean priv = false;
+        if (p.length > 1 && p[1].matches("\\d+")) cap = Integer.parseInt(p[1]);
+        if ((p.length > 1 && p[1].equalsIgnoreCase("privada")) || (p.length > 2 && p[2].equalsIgnoreCase("privada"))) priv = true;
+        
+        Sala s = GestorSalas.getInstancia().crearSala(cliente, cap, priv);
+        cliente.setSalaActual(s);
+        cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Sala creada ID: " + s.getId()));
         mostrarMenuPrincipal();
     }
 
-    private void manejarUnirse(String[] partes) {
-        if (!cliente.isAutenticado()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Debes iniciar sesión primero."));
-            return;
-        }
-        if (cliente.getSalaActual() != null) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya estás en una sala."));
-            return;
-        }
-        if (partes.length < 2) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /unir <id_sala>"));
-            return;
-        }
+    private void manejarUnirse(String[] p) {
+        if (!cliente.isAutenticado() || cliente.getSalaActual() != null || p.length < 2) return;
         try {
-            int idSala = Integer.parseInt(partes[1]);
-            Sala s = GestorSalas.getInstancia().buscarSala(idSala);
-
-            if (s == null) {
-                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Sala no encontrada."));
-                return;
-            }
-            if (s.isEsPrivada()) {
-                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Esta sala es PRIVADA. Solo puedes entrar por invitación."));
-                return;
-            }
-            if (s.agregarJugador(cliente)) {
+            Sala s = GestorSalas.getInstancia().buscarSala(Integer.parseInt(p[1]));
+            if (s != null && !s.isEsPrivada() && s.agregarJugador(cliente)) {
                 cliente.setSalaActual(s);
-                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Te has unido a la sala #" + s.getId()));
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Unido a sala " + s.getId()));
                 mostrarMenuPrincipal();
-            } else {
-                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes unirte (Sala llena o en juego)."));
-            }
-        } catch (NumberFormatException e) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "El ID debe ser un número."));
-        }
+            } else cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No se pudo unir."));
+        } catch (Exception e) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "ID inválido.")); }
     }
 
     private void manejarListarSalas() {
-        if (!cliente.isAutenticado()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Debes iniciar sesión primero."));
-            return;
-        }
-        StringBuilder sb = new StringBuilder("Salas disponibles:\n");
-        var listaSalas = GestorSalas.getInstancia().getSalas();
-
-        if (listaSalas.isEmpty()) {
-            sb.append("No hay salas activas.");
-        } else {
-            for (Sala s : listaSalas) {
-                sb.append(s.toString()).append("\n");
-            }
-        }
+        StringBuilder sb = new StringBuilder("Salas:\n");
+        for (Sala s : GestorSalas.getInstancia().getSalas()) sb.append(s.toString()).append("\n");
         cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, sb.toString()));
     }
 
-    private void manejarSalir() {
+    private void manejarSalirDeSalaAlLobby() {
         if (cliente.getSalaActual() != null) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Primero usa /salir_sala para abandonar la partida."));
-            return;
+            cliente.getSalaActual().removerJugador(cliente);
+            if (cliente.getSalaActual().getJugadores().isEmpty()) GestorSalas.getInstancia().eliminarSala(cliente.getSalaActual());
+            cliente.setSalaActual(null);
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Saliste de la sala."));
+            mostrarMenuPrincipal();
         }
+    }
+
+    private void manejarSalir() {
         cliente.setAutenticado(false);
-        cliente.setNombreJugador(null);
-        cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Sesión cerrada."));
-        cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
-                "--------------------------------------------------\n" +
-                " BIENVENIDO A COUPCITO \n" +
-                " Usa: /registrar o /login para entrar.\n" +
-                "--------------------------------------------------"));
+        cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Desconectado."));
     }
 
     private void manejarIniciarPartida() {
-        Sala sala = cliente.getSalaActual();
-        if (sala == null) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No estás en ninguna sala."));
-            return;
-        }
-        if (sala.iniciarPartida(cliente)) {
-            sala.broadcastSala(new Mensaje(Constantes.ESTADO, "La partida ha iniciado."));
+        if (cliente.getSalaActual() != null && cliente.getSalaActual().iniciarPartida(cliente)) {
+            cliente.getSalaActual().broadcastSala(new Mensaje(Constantes.ESTADO, "Partida iniciada."));
         }
     }
 
     private void mostrarMenuPrincipal() {
         if (cliente.getSalaActual() == null) {
-            String menu = "\n=== MENU ===\n" +
-                    "/crear <2-6> [privada-publica]\n" +
-                    "/unir <id_sala>\n" +
-                    "/lista\n" +
-                    "/salir";
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, menu));
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "\n=== MENU ===\n/crear <2-6>\n/unir <id>\n/lista\n/salir"));
         } else {
-            StringBuilder sb = new StringBuilder("\n=== MENU SALA ===\n");
-            sb.append("--- Jugadores en tu sala ---\n");
-            for (HiloCliente jugador : cliente.getSalaActual().getJugadores()) {
-                sb.append(" > ").append(jugador.getNombreJugador()).append("\n");
-            }
-
-            sb.append("--- Usuarios en Lobby (Disponibles) ---\n");
-            boolean hayGente = false;
-            for (HiloCliente c : ServidorCoup.clientesConectados) {
-                if (c.isAutenticado() && c.getSalaActual() == null) {
-                    sb.append(" * ").append(c.getNombreJugador()).append("\n");
-                    hayGente = true;
-                }
-            }
-            if (!hayGente) {
-                sb.append(" (Nadie en el lobby)\n");
-            }
-            sb.append("---------------------------------------\n");
-            sb.append("/salir_sala\n");
-            sb.append("/iniciar\n");
-            if (cliente.getSalaActual().isEsPrivada()) {
-                sb.append("/invitar <usuario>\n");
-            }
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, sb.toString()));
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "\n=== EN SALA ===\n/iniciar\n/salir_sala"));
         }
     }
 }
