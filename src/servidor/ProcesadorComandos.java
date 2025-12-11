@@ -79,19 +79,27 @@ public class ProcesadorComandos {
     private void anunciarRobo(String[] partes) {
         if (!verificarTurno()) return;
         if (partes.length < 2) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /robar <jugador>")); return; }
-        
+
         Sala sala = cliente.getSalaActual();
         HiloCliente victima = buscarObjetivo(sala, partes[1]);
-        
+
         if (victima == null || !victima.isEstaVivo() || victima == cliente) {
-             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Objetivo inválido.")); return;
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Objetivo inválido.")); return;
         }
 
         prepararEscenarioDesafio(sala, Constantes.CAPITAN, "ROBAR", victima);
 
-        sala.broadcastSala(new Mensaje(Constantes.ACCION, 
-            ">> " + cliente.getNombreJugador() + " dice ser CAPITAN y quiere robar a " + victima.getNombreJugador() + ".\n" +
-            "   (Esperando: /desafiar o /continuar)"));
+        String msgGeneral = ">> " + cliente.getNombreJugador() + " dice ser CAPITAN y quiere robar a " + victima.getNombreJugador() + ".";
+
+        for (HiloCliente j : sala.getJugadores()) {
+            if (j.equals(victima)) {
+                j.enviarMensaje(new Mensaje(Constantes.ACCION,
+                        msgGeneral + "\n   ¿Dudas que sea Capitán? (/desafiar) o (/continuar)"));
+            } else {
+                j.enviarMensaje(new Mensaje(Constantes.ACCION,
+                        msgGeneral + "\n   (Esperando: /desafiar o /continuar)"));
+            }
+        }
     }
 //solo aparece el mensaje a las victimas
     private void anunciarAsesinato(String[] partes) {
