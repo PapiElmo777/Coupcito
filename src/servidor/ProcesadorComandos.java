@@ -264,6 +264,16 @@ public class ProcesadorComandos {
              ">> " + cliente.getNombreJugador() + " paga 3 y dice ser ASESINO contra " + victima.getNombreJugador() + ".\n" +
              "   ¿Alguien duda que sea Asesino? (/desafiar) o (/continuar)"));
     }
+    private void ejecutarAsesinar(HiloCliente asesino, HiloCliente victima) {
+        
+        Sala sala = asesino.getSalaActual();
+        sala.setEsperandoBloqueo(true); 
+        sala.setMonedasEnJuego(3);
+        
+        sala.broadcastSala(new Mensaje(Constantes.ACCION,
+            ">> ¡El Asesinato procede! " + victima.getNombreJugador() + ", ¿tienes a la Condesa?\n" +
+            ">> /bloquear (si tienes Condesa/mientes) o /aceptar"));
+    }
     //embajador
     private void iniciarEmbajador() {
         if (!verificarTurno()) return;
