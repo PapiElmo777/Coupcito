@@ -60,11 +60,6 @@ public class ProcesadorComandos {
         }
     }
 
-    // ================================================================
-    //   1. FASE DE ANUNCIO (Bluffing)
-    //   Aquí se pausa el juego esperando "/desafiar" o "/continuar"
-    // ================================================================
-
     private void anunciarDuque() {
         if (!verificarTurno()) return;
         Sala sala = cliente.getSalaActual();
@@ -148,7 +143,6 @@ public class ProcesadorComandos {
             "   (Esperando: /desafiar o /continuar)"));
     }
 
-    // Método auxiliar para no repetir código de configuración
     private void prepararEscenarioDesafio(Sala sala, String carta, String accion, HiloCliente objetivo) {
         sala.setJugadorAtacante(cliente);
         sala.setJugadorObjetivo(objetivo);
@@ -157,9 +151,7 @@ public class ProcesadorComandos {
         sala.setEsperandoDesafio(true);
     }
 
-    // ================================================================
-    //   2. RESOLUCIÓN DE DESAFÍOS Y CONTINUACIÓN
-    // ================================================================
+    //   RESOLUCIÓN DE DESAFÍOS Y CONTINUACIÓN
 
     private void manejarContinuar() {
         Sala sala = cliente.getSalaActual();
@@ -199,47 +191,36 @@ public class ProcesadorComandos {
         sala.broadcastSala(new Mensaje(Constantes.ACCION, "!!! DESAFÍO !!! " + retador.getNombreJugador() + " desafía a " + acusado.getNombreJugador()));
 
         if (tieneLaCarta) {
-            // --- EL ACUSADO DICE LA VERDAD ---
-            aplicarCastigo(retador, sala); // Retador pierde vida
+            aplicarCastigo(retador, sala);
             
             sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + acusado.getNombreJugador() + " ENSEÑA LA CARTA: " + cartaReclamada));
-            
-            // FIX CRÍTICO: Cambio de carta manual.
-            // No usamos perderCarta() porque si tiene 1 vida lo mataría antes de darle la nueva.
             acusado.getCartasEnMano().remove(cartaReclamada); 
             sala.devolverCartaAlMazo(cartaReclamada);
             String nueva = sala.tomarCartaDelMazo();
             acusado.agregarCarta(nueva);
             
             sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + acusado.getNombreJugador() + " baraja y toma carta nueva."));
-
-            // El desafío falló para el retador, así que la acción original PROCEDE
             ejecutarAccionPendiente(sala);
 
         } else {
-            // --- EL ACUSADO MENTÍA ---
-            aplicarCastigo(acusado, sala); // Acusado pierde vida
+            aplicarCastigo(acusado, sala);
 
             sala.broadcastSala(new Mensaje(Constantes.ESTADO, 
                 ">> ¡CACHADO! " + acusado.getNombreJugador() + " NO tenía " + cartaReclamada + ".\n" +
                 ">> La acción ha sido CANCELADA."));
 
             sala.limpiarEstadoDesafio();
-            limpiarEstadoAsesinato(sala); 
-            
-            // FIX CRÍTICO: Como la acción se canceló, el turno DEBE pasar aquí manualmente.
-            // Si no ponemos esto, el juego se queda esperando eternamente.
+            limpiarEstadoAsesinato(sala);
             sala.siguienteTurno();
         }
     }
 
-    // ================================================================
-    //   3. EJECUCIÓN REAL (Post-Validación)
-    // ================================================================
+    //   EJECUCIÓN REAL (Post-Validación)
+
 
     private void ejecutarAccionPendiente(Sala sala) {
         String accion = sala.getAccionPendiente();
-        sala.limpiarEstadoDesafio(); // Limpiamos banderas de desafío
+        sala.limpiarEstadoDesafio();
         
         if (accion == null) return;
 
@@ -271,13 +252,17 @@ public class ProcesadorComandos {
                 break;
 
             case "ASESINAR":
-                // Aquí NO se mata todavía. Se abre la ventana para que la Condesa bloquee.
-                sala.setEsperandoBloqueo(true); 
-                sala.setMonedasEnJuego(3);
-                sala.broadcastSala(new Mensaje(Constantes.ACCION,
-                    ">> ¡Nadie dudó del Asesino! " + sala.getJugadorObjetivo().getNombreJugador() + ", ¿tienes a la Condesa?\n" +
-                    ">> /bloquear (si tienes Condesa) o /aceptar"));
-                // NOTA: No pasamos turno aquí. Esperamos respuesta de la víctima.
+                sala.setEsperandoBloqueo(true);
+                HiloCliente target = sala.getJugadorObjetivo();
+                HiloCliente attacker = sala.getJugadorAtacante();
+                target.enviarMensaje(new Mensaje(Constantes.ACCION,
+                        "¿Tienes a la Condesa?\n/bloquear (si tienes Condesa) o /aceptar"));
+                for (HiloCliente j : sala.getJugadores()) {
+                    if (!j.equals(target)) {
+                        j.enviarMensaje(new Mensaje(Constantes.ESTADO,
+                                ">> Esperando a ver si " + target.getNombreJugador() + " bloquea o acepta la muerte..."));
+                    }
+                }
                 break;
 
             case "EMBAJADOR":
@@ -293,14 +278,13 @@ public class ProcesadorComandos {
                     sb.append("Usa: /seleccionar <carta1> [carta2] para quedarte con ellas.");
                     embajador.enviarMensaje(new Mensaje(Constantes.ESTADO, sb.toString()));
                 }
-                // NOTA: No pasamos turno aquí. Esperamos /seleccionar.
                 break;
         }
     }
 
-    // ================================================================
-    //   4. OTRAS MECÁNICAS DE JUEGO
-    // ================================================================
+
+    //  OTRAS MECÁNICAS DE JUEGO
+
 
     private void tomarUnaMoneda() {
         if (!verificarTurno()) return;
@@ -407,15 +391,8 @@ public class ProcesadorComandos {
         limpiarEstadoAsesinato(sala);
         sala.siguienteTurno();
     }
-
-    // ================================================================
-    //   5. UTILIDADES (Castigo, Turnos, Validaciones)
-    // ================================================================
-
     private void aplicarCastigo(HiloCliente perdedor, Sala sala) {
         if (perdedor.getCartasEnMano().isEmpty()) return;
-        
-        // Pierde la primera carta (Simplificación)
         String cartaPerdida = perdedor.getCartasEnMano().get(0);
         perdedor.perderCarta(cartaPerdida);
         sala.devolverCartaAlMazo(cartaPerdida);
@@ -473,9 +450,8 @@ public class ProcesadorComandos {
         }
     }
 
-    // ================================================================
-    //   6. GESTIÓN DE SALA Y LOBBY (Login, Registro, etc)
-    // ================================================================
+
+    // GESTIÓN DE SALA Y LOBBY
 
     private void manejarRegistro(String[] p) {
         if (cliente.isAutenticado()) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya iniciaste sesión.")); return; }
