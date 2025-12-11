@@ -98,6 +98,12 @@ private void manejarDesafio(String[] partes) {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No hay nada que desafiar ahora."));
             return;
         }
+        HiloCliente acusado = sala.getJugadorAtacante(); // El que hizo la acción
+        HiloCliente retador = cliente;
+        if (acusado.equals(retador)) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes desafiarte a ti mismo."));
+            return;
+        }
    
     private boolean bloquearPorRestricciones(String comando) {
         // Regla: Obligado a Coupear con 10 o más monedas
