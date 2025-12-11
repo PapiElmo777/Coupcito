@@ -98,12 +98,50 @@ private void manejarDesafio(String[] partes) {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No hay nada que desafiar ahora."));
             return;
         }
+
         HiloCliente acusado = sala.getJugadorAtacante(); // El que hizo la acción
         HiloCliente retador = cliente;
         if (acusado.equals(retador)) {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes desafiarte a ti mismo."));
             return;
         }
+        String cartaReclamada = sala.getCartaRequerida();
+        boolean tieneLaCarta = acusado.getCartasEnMano().contains(cartaReclamada);
+
+        sala.broadcastSala(new Mensaje(Constantes.ACCION, "!!! DESAFÍO !!! " + retador.getNombreJugador() + " desafía a " + acusado.getNombreJugador()));
+
+        if (tieneLaCarta) {
+            // CASO 1: EL ACUSADO DICE LA VERDAD
+            // El retador pierde una carta (castigo por bribon)
+            aplicarCastigo(retador, sala); 
+            
+           
+            acusado.perderCarta(cartaReclamada); 
+            sala.devolverCartaAlMazo(cartaReclamada);
+            String nueva = sala.tomarCartaDelMazo();
+            acusado.agregarCarta(nueva);
+            
+            sala.broadcastSala(new Mensaje(Constantes.ESTADO, 
+                ">> " + acusado.getNombreJugador() + " TENÍA la carta " + cartaReclamada + ".\n" +
+                ">> " + retador.getNombreJugador() + " rcambia su carta por una nueva."));
+
+            
+            ejecutarAccionPendiente(sala);
+
+        } else {
+            // CASO 2: EL ACUSADO MENTÍA
+            //  El acusado pierde una carta (castigo por bribon)
+            aplicarCastigo(acusado, sala);
+
+            sala.broadcastSala(new Mensaje(Constantes.ESTADO, 
+                ">> ¡CACHADO! " + acusado.getNombreJugador() + " NO tenía " + cartaReclamada + ".\n" +
+                ">> La acción ha sido CANCELADA y pierde una vida."));
+
+       
+            sala.limpiarEstadoDesafio();
+            limpiarEstadoAsesinato(sala); 
+        }
+    }
    
     private boolean bloquearPorRestricciones(String comando) {
         // Regla: Obligado a Coupear con 10 o más monedas
