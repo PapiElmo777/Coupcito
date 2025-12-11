@@ -265,6 +265,12 @@ public class ProcesadorComandos {
                 }
                 break;
 
+            case "BLOQUEO_CONDESA":
+                sala.broadcastSala(new Mensaje(Constantes.ESTADO,
+                        ">> " + sala.getJugadorAtacante().getNombreJugador() + " acepto el bloqueo. El asesinato fallo."));
+                sala.siguienteTurno();
+                break;
+
             case "EMBAJADOR":
                 HiloCliente embajador = sala.getJugadorAtacante();
                 String c1 = sala.tomarCartaDelMazo();
