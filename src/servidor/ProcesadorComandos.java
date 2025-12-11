@@ -142,7 +142,20 @@ private void manejarDesafio(String[] partes) {
             limpiarEstadoAsesinato(sala); 
         }
     }
-   
+   private void aplicarCastigo(HiloCliente perdedor, Sala sala) {
+        if (perdedor.getCartasEnMano().isEmpty()) return;
+        
+     
+        String cartaPerdida = perdedor.getCartasEnMano().get(0);
+        perdedor.perderCarta(cartaPerdida);
+        sala.devolverCartaAlMazo(cartaPerdida);
+        
+        sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + perdedor.getNombreJugador() + " ha perdido la carta: " + cartaPerdida));
+        
+        if (!perdedor.isEstaVivo()) {
+            sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> JUGADOR ELIMINADO: " + perdedor.getNombreJugador()));
+        }
+    }
     private boolean bloquearPorRestricciones(String comando) {
         // Regla: Obligado a Coupear con 10 o más monedas
         if (cliente.getMonedas() >= 10) {
