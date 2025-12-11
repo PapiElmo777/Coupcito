@@ -192,12 +192,19 @@ public class ProcesadorComandos {
         sala.siguienteTurno();
     }
     //duque
-    private void tomarTres() {
-        cliente.sumarMonedas(3);
+   private void tomarTres() {
+        if (!verificarTurno()) return;
         Sala sala = cliente.getSalaActual();
-        sala.broadcastSala(new Mensaje(Constantes.ACCION, ">> " + cliente.getNombreJugador() + " tomo 3 monedas porque es el duke (+3 monedas)."));
-        enviarEstadoActualizado(cliente);
-        sala.siguienteTurno();
+        
+        
+        sala.setJugadorAtacante(cliente);
+        sala.setCartaRequerida(Constantes.DUQUE);
+        sala.setAccionPendiente("TOMAR_3");
+        sala.setEsperandoDesafio(true);
+        
+        sala.broadcastSala(new Mensaje(Constantes.ACCION, 
+            ">> " + cliente.getNombreJugador() + " dice ser DUQUE y quiere tomar 3 monedas.\n" +
+            "   Usa /desafiar o el jugador activo usa /continuar si nadie desafía."));
     }
     //capitan
     private void robar(String[] partes) {
@@ -649,6 +656,7 @@ public class ProcesadorComandos {
                  break;
         }
     }
+    
     private void mostrarMenuPrincipal() {
         if (cliente.getSalaActual() == null) {
             String menu = "\n=== MENU ===\n" +
