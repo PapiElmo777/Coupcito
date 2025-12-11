@@ -172,47 +172,47 @@ public class ProcesadorComandos {
 
     private void manejarDesafio(String[] partes) {
         Sala sala = cliente.getSalaActual();
-        if (sala == null || !sala.isEsperandoDesafio()) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No hay nada que desafiar."));
-            return;
-        }
+        if (sala == null || !sala.isEsperandoDesafio()) return;
 
-        HiloCliente acusado = sala.getJugadorAtacante(); 
-        HiloCliente retador = cliente; 
+        String accion = sala.getAccionPendiente();
+        HiloCliente acusado;
+        HiloCliente retador = cliente;
+        if (accion.equals("BLOQUEO_CONDESA")) {
+            acusado = sala.getJugadorObjetivo();
+        } else {
+            acusado = sala.getJugadorAtacante();
+        }
 
         if (acusado.equals(retador)) {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes desafiarte a ti mismo."));
             return;
         }
-
         String cartaReclamada = sala.getCartaRequerida();
-        boolean tieneLaCarta = acusado.getCartasEnMano().contains(cartaReclamada);
-
-        sala.broadcastSala(new Mensaje(Constantes.ACCION, "!!! DESAFÍO !!! " + retador.getNombreJugador() + " desafía a " + acusado.getNombreJugador()));
+        boolean tieneLaCarta = acusado.tieneCarta(cartaReclamada);
 
         if (tieneLaCarta) {
             aplicarCastigo(retador, sala);
-            
-            sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + acusado.getNombreJugador() + " ENSEÑA LA CARTA: " + cartaReclamada));
-            acusado.getCartasEnMano().remove(cartaReclamada); 
-            sala.devolverCartaAlMazo(cartaReclamada);
-            String nueva = sala.tomarCartaDelMazo();
-            acusado.agregarCarta(nueva);
-            
-            sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + acusado.getNombreJugador() + " baraja y toma carta nueva."));
-            ejecutarAccionPendiente(sala);
+            if (accion.equals("BLOQUEO_CONDESA")) {
+                sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> El bloqueo es legítimo. El asesinato falla."));
+                sala.siguienteTurno();
+            } else {
+                ejecutarAccionPendiente(sala);
+            }
 
         } else {
             aplicarCastigo(acusado, sala);
-
-            sala.broadcastSala(new Mensaje(Constantes.ESTADO, 
-                ">> ¡CACHADO! " + acusado.getNombreJugador() + " NO tenía " + cartaReclamada + ".\n" +
-                ">> La acción ha sido CANCELADA."));
-
-            sala.limpiarEstadoDesafio();
-            limpiarEstadoAsesinato(sala);
-            sala.siguienteTurno();
+            if (accion.equals("BLOQUEO_CONDESA")) {
+                sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> ¡NO ERA CONDESA! El bloqueo falla."));
+                aplicarCastigo(acusado, sala);
+                sala.siguienteTurno();
+            } else {
+                sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> La acción ha sido CANCELADA."));
+                sala.siguienteTurno();
+            }
         }
+
+        sala.limpiarEstadoDesafio();
+        limpiarEstadoAsesinato(sala);
     }
 
     //   EJECUCIÓN REAL (Post-Validación)
