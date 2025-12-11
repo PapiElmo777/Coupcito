@@ -605,6 +605,50 @@ public class ProcesadorComandos {
             sala.broadcastSala(new Mensaje(Constantes.ESTADO, "La partida ha iniciado."));
         }
     }
+    private void manejarContinuar() {
+        Sala sala = cliente.getSalaActual();
+        if (sala == null || !sala.isEsperandoDesafio()) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No hay ninguna acción pausada para continuar."));
+            return;
+        }
+        
+        // Solo el jugador que está actuando debería poder forzar el continuar 
+        // (o podrías dejar que cualquiera lo haga si todos dicen "paso")
+        if (!sala.getJugadorAtacante().equals(cliente)) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Solo el jugador activo puede confirmar para continuar si nadie desafía."));
+            return;
+        }
+
+        sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> Nadie desafió. Se ejecuta la acción de " + cliente.getNombreJugador()));
+        ejecutarAccionPendiente(sala);
+    }
+
+    // Este método centraliza la ejecución real después de pasar el desafío
+    private void ejecutarAccionPendiente(Sala sala) {
+        String accion = sala.getAccionPendiente();
+        sala.limpiarEstadoDesafio(); 
+        
+        switch (accion) {
+            case "TOMAR_3":
+                ejecutarTomarTres(sala.getJugadorAtacante());
+                break;
+            case "ROBAR":
+                ejecutarRobar(sala.getJugadorAtacante(), sala.getJugadorObjetivo());
+                break;
+            case "ASESINAR":
+                ejecutarAsesinar(sala.getJugadorAtacante(), sala.getJugadorObjetivo());
+                break;
+            case "EMBAJADOR":
+                ejecutarEmbajador(sala.getJugadorAtacante());
+                break;
+            case "BLOQUEO_CONDESA": 
+            
+                 sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> El bloqueo fue exitoso. El asesinato se cancela."));
+                 sala.setEsperandoBloqueo(false);
+                 sala.siguienteTurno();
+                 break;
+        }
+    }
     private void mostrarMenuPrincipal() {
         if (cliente.getSalaActual() == null) {
             String menu = "\n=== MENU ===\n" +
