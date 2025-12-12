@@ -177,6 +177,7 @@ public class ProcesadorComandos {
         String accion = sala.getAccionPendiente();
         HiloCliente acusado;
         HiloCliente retador = cliente;
+
         if (accion.equals("BLOQUEO_CONDESA")) {
             acusado = sala.getJugadorObjetivo();
         } else {
@@ -187,32 +188,42 @@ public class ProcesadorComandos {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes desafiarte a ti mismo."));
             return;
         }
+
         String cartaReclamada = sala.getCartaRequerida();
         boolean tieneLaCarta = acusado.tieneCarta(cartaReclamada);
 
         if (tieneLaCarta) {
             aplicarCastigo(retador, sala);
+            acusado.perderCarta(cartaReclamada);
+            sala.devolverCartaAlMazo(cartaReclamada);
+            String nueva = sala.tomarCartaDelMazo();
+            acusado.agregarCarta(nueva);
+            acusado.enviarMensaje(new Mensaje(Constantes.ESTADO, "Mostraste tu carta. Nueva carta: " + nueva));
+
             if (accion.equals("BLOQUEO_CONDESA")) {
                 sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> El bloqueo es legítimo. El asesinato falla."));
                 sala.siguienteTurno();
+                limpiarEstadoAsesinato(sala);
             } else {
                 ejecutarAccionPendiente(sala);
+                if (!accion.equals("ASESINAR")) {
+                    limpiarEstadoAsesinato(sala);
+                }
             }
-
         } else {
             aplicarCastigo(acusado, sala);
+
             if (accion.equals("BLOQUEO_CONDESA")) {
                 sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> ¡NO ERA CONDESA! El bloqueo falla."));
                 aplicarCastigo(acusado, sala);
                 sala.siguienteTurno();
             } else {
-                sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> La acción ha sido CANCELADA."));
+                sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> La accion ha sido CANCELADA por mentiroso."));
                 sala.siguienteTurno();
             }
+            limpiarEstadoAsesinato(sala);
         }
-
         sala.limpiarEstadoDesafio();
-        limpiarEstadoAsesinato(sala);
     }
 
     //   EJECUCIÓN REAL (Post-Validación)
