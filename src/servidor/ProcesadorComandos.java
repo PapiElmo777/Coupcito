@@ -533,6 +533,10 @@ public class ProcesadorComandos {
 
     private boolean verificarTurno() {
         Sala sala = cliente.getSalaActual();
+        if (sala.getEspectadores().contains(cliente)) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Eres espectador, solo puedes mirar y chatear."));
+            return false;
+        }
         if (sala == null || !sala.isEnJuego()) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No hay partida activa.")); return false; }
         if (!sala.esTurnoDe(cliente)) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "¡No es tu turno!")); return false; }
         if (sala.isEsperandoDesafio() || sala.isEsperandoBloqueo()) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Hay una acción pendiente. Espera.")); return false; }
@@ -607,7 +611,6 @@ public class ProcesadorComandos {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /unir <id_sala>"));
             return;
         }
-
         try {
             int idSala = Integer.parseInt(partes[1]);
             Sala s = GestorSalas.getInstancia().buscarSala(idSala);
@@ -620,13 +623,28 @@ public class ProcesadorComandos {
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Esta sala es PRIVADA y no has sido invitado."));
                 return;
             }
-            if (s.agregarJugador(cliente)) {
+            if (!s.isEnJuego() && s.agregarJugador(cliente)) {
                 cliente.setSalaActual(s);
-                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Te has unido a la sala #" + s.getId()));
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Te has unido a la sala #" + s.getId() + " como JUGADOR."));
                 mostrarMenuPrincipal();
-            } else {
-                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes unirte (Sala llena o en juego)."));
+                return;
             }
+            if (s.isEnJuego() || s.getJugadores().size() >= 6) {
+                if (s.agregarEspectador(cliente)) {
+                    cliente.setSalaActual(s);
+                    cliente.enviarMensaje(new Mensaje(Constantes.ESTADO,
+                            "La partida ya inició o la sala está llena.\n" +
+                                    "Te has unido como ESPECTADOR."));
+
+                    s.broadcastSala(new Mensaje(Constantes.TEXTO, ">> " + cliente.getNombreJugador() + " está observando la partida."));
+                    cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "\n=== MODO ESPECTADOR ===\n/chat <mensaje>\n/salir_sala"));
+                } else {
+                    cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes unirte: Sala llena (incluso de espectadores)."));
+                }
+                return;
+            }
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No se pudo entrar a la sala."));
+
         } catch (NumberFormatException e) {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "El ID debe ser un número."));
         }
