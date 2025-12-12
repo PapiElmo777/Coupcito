@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.Collections;
 
 public class Sala implements Serializable {
+    private transient List<HiloCliente> espectadores;
+    private static final int MAX_ESPECTADORES = 4;
+
     private static final long serialVersionUID = 1L;
     private static int contadorIds = 1;
 
@@ -17,15 +20,15 @@ public class Sala implements Serializable {
     private boolean esPrivada;
     private boolean enJuego;
     private String nombreAdmin;
-    private boolean esperandoDesafio = false; 
-    private String cartaRequerida = null;    
+    private boolean esperandoDesafio = false;
+    private String cartaRequerida = null;
     private String accionPendiente = null;
 
     private List<String> listaInvitados;
-    private transient List<HiloCliente> jugadores; 
+    private transient List<HiloCliente> jugadores;
     private transient List<String> mazo;
     private int turnoActual = 0;
-    
+
     // --- variables condesa ---
     private HiloCliente jugadorAtacante;
     private HiloCliente jugadorObjetivo;
@@ -33,18 +36,18 @@ public class Sala implements Serializable {
     private int monedasAsesina = 0; //
     public boolean isEsperandoDesafio() { return esperandoDesafio; }
     public void setEsperandoDesafio(boolean esperandoDesafio) { this.esperandoDesafio = esperandoDesafio; }
-    
+
     public String getCartaRequerida() { return cartaRequerida; }
     public void setCartaRequerida(String cartaRequerida) { this.cartaRequerida = cartaRequerida; }
-    
+
     public String getAccionPendiente() { return accionPendiente; }
     public void setAccionPendiente(String accionPendiente) { this.accionPendiente = accionPendiente; }
-    
+
     public void limpiarEstadoDesafio() {
         this.esperandoDesafio = false;
         this.cartaRequerida = null;
         this.accionPendiente = null;
-        
+
     }
 
     public Sala(HiloCliente creador, int capacidad, boolean privada) {
@@ -53,17 +56,25 @@ public class Sala implements Serializable {
         this.esPrivada = privada;
         this.nombreAdmin = creador.getNombreJugador();
         this.jugadores = new ArrayList<>();
-        this.jugadores.add(creador); 
+        this.jugadores.add(creador);
         this.enJuego = false;
         this.mazo = new ArrayList<String>();
         this.listaInvitados = new ArrayList<>();
         this.listaInvitados.add(creador.getNombreJugador());
+        this.espectadores = new ArrayList<>();
     }
 
     public void agregarInvitado(String nombreJugador) {
         if (!listaInvitados.contains(nombreJugador)) {
             listaInvitados.add(nombreJugador);
         }
+    }
+    public boolean agregarEspectador(HiloCliente cliente) {
+        if (espectadores.size() < MAX_ESPECTADORES) {
+            espectadores.add(cliente);
+            return true;
+        }
+        return false;
     }
     public boolean esInvitado(String nombreJugador) {
         return !esPrivada || listaInvitados.contains(nombreJugador);
@@ -262,6 +273,9 @@ public class Sala implements Serializable {
     }
     public void setMonedasEnJuego(int monedas) {
         this.monedasAsesina = monedas;
+    }
+    public List<HiloCliente> getEspectadores() {
+        return espectadores;
     }
 
     @Override
