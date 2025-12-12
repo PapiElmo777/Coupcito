@@ -432,16 +432,27 @@ public class ProcesadorComandos {
     }
 
     private boolean bloquearPorRestricciones(String comando) {
+        Sala sala = cliente.getSalaActual();
+        if (sala == null || !sala.isEnJuego()) {
+            return false;
+        }
+        if (!sala.esTurnoDe(cliente)) {
+            return false;
+        }
+        if (comando.equals("/salir") || comando.equals("/salir_sala") ||
+                comando.equals("/chat") || comando.equals("/estado") ||
+                comando.equals("/seleccionar")) {
+            return false;
+        }
         if (cliente.getMonedas() >= 10) {
-            boolean permitido = comando.equals("/coupear") || comando.equals("/salir") || comando.equals("/salir_sala");
-            if (!permitido) {
+            if (!comando.equals("/coupear")) {
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "¡Tienes 10+ monedas! Estás OBLIGADO a usar /coupear <jugador>."));
                 return true;
             }
         }
         if (cliente.getCartasEnMano().size() > 2) {
             if (!comando.startsWith("/seleccionar")) {
-                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Usa /seleccionar para devolver las cartas extra."));
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Tienes cartas de mas. Usa /seleccionar para devolverlas."));
                 return true;
             }
         }
