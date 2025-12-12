@@ -439,12 +439,18 @@ public class ProcesadorComandos {
         String cartaPerdida = perdedor.getCartasEnMano().get(0);
         perdedor.perderCarta(cartaPerdida);
         sala.devolverCartaAlMazo(cartaPerdida);
-        
+
         sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + perdedor.getNombreJugador() + " pierde una vida (" + cartaPerdida + ")."));
-        
         if (!perdedor.isEstaVivo()) {
-            sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> JUGADOR ELIMINADO: " + perdedor.getNombreJugador()));
+            String msgMuerte = "\n" +
+                    "****************************************\n" +
+                    "   JUGADOR " + perdedor.getNombreJugador() +  " ELIMINADO"+"\n" +
+                    "****************************************\n";
+            sala.broadcastSala(new Mensaje(Constantes.ESTADO, msgMuerte));
+
+            perdedor.enviarMensaje(new Mensaje(Constantes.ESTADO, "Has sido eliminado. Ahora eres espectador."));
         }
+
         enviarEstadoActualizado(perdedor);
     }
 
