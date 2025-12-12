@@ -22,6 +22,9 @@ public class Sala implements Serializable {
     private String accionPendiente = null;   
    
     private transient List<HiloCliente> jugadores; 
+    // Lista para espectadores
+    private transient List<HiloCliente> espectadores;
+
     private transient List<String> mazo;
     private int turnoActual = 0;
     
@@ -29,7 +32,8 @@ public class Sala implements Serializable {
     private HiloCliente jugadorAtacante;
     private HiloCliente jugadorObjetivo;
     private boolean esperandoBloqueo = false;
-    private int monedasAsesina = 0; //
+    private int monedasAsesina = 0; 
+
     public boolean isEsperandoDesafio() { return esperandoDesafio; }
     public void setEsperandoDesafio(boolean esperandoDesafio) { this.esperandoDesafio = esperandoDesafio; }
     
@@ -43,19 +47,19 @@ public class Sala implements Serializable {
         this.esperandoDesafio = false;
         this.cartaRequerida = null;
         this.accionPendiente = null;
-        
     }
+
     public Sala(HiloCliente creador, int capacidad, boolean privada) {
         this.id = contadorIds++;
         this.capacidadMaxima = capacidad;
         this.esPrivada = privada;
         this.nombreAdmin = creador.getNombreJugador();
         this.jugadores = new ArrayList<>();
+        this.espectadores = new ArrayList<>(); // Inicializar lista
         this.jugadores.add(creador); 
         this.enJuego = false;
         this.mazo = new ArrayList<String>();
     }
-
    
     public boolean agregarJugador(HiloCliente jugador) {
         if (jugadores.size() < capacidadMaxima && !enJuego) {
@@ -65,19 +69,35 @@ public class Sala implements Serializable {
         return false;
     }
 
+    // Método para agregar espectadores
+    public void agregarEspectador(HiloCliente espectador) {
+        espectadores.add(espectador);
+        broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + espectador.getNombreJugador() + " se ha unido como ESPECTADOR."));
+    }
+
     public void removerJugador(HiloCliente jugador) {
-        if (jugadores != null) {
+        if (jugadores != null && jugadores.contains(jugador)) {
             jugadores.remove(jugador);
+            // Si el admin se va, asignar otro o eliminar sala logic se maneja en Procesador
+        } else if (espectadores != null && espectadores.contains(jugador)) {
+            espectadores.remove(jugador);
         }
     }
 
+    // MODIFICADO: Enviar mensaje a jugadores Y espectadores
     public void broadcastSala(Mensaje msj) {
         if (jugadores != null) {
             for (HiloCliente j : jugadores) {
                 j.enviarMensaje(msj);
             }
         }
+        if (espectadores != null) {
+            for (HiloCliente e : espectadores) {
+                e.enviarMensaje(msj);
+            }
+        }
     }
+
     public boolean iniciarPartida(HiloCliente solicitante) {
         if (!solicitante.getNombreJugador().equals(nombreAdmin)) {
             solicitante.enviarMensaje(new Mensaje(Constantes.ESTADO, "Solo el admin puede iniciar."));
@@ -95,6 +115,7 @@ public class Sala implements Serializable {
     private void prepararJuego() {
         mazo.clear();
         String[] tipos = {Constantes.DUQUE, Constantes.ASESINO, Constantes.CAPITAN, Constantes.EMBAJADOR, Constantes.CONDESA};
+        // 3 copias de cada carta
         for (String tipo : tipos) {
             for (int i = 0; i < 3; i++) {
                 mazo.add(tipo);
@@ -139,12 +160,18 @@ public class Sala implements Serializable {
     }
 
     private void notificarTurno() {
+        // Verificar si hay ganador antes de dar turno
+        if (verificarGanador()) return;
+
         if (jugadores.isEmpty()) return;
         HiloCliente jugadorActivo = jugadores.get(turnoActual);
+        
+        // Si el jugador actual está muerto, pasar al siguiente
         if (!jugadorActivo.isEstaVivo()) {
             siguienteTurno();
             return;
         }
+
         for (HiloCliente j : jugadores) {
             if (j == jugadorActivo) {
                 j.enviarMensaje(new Mensaje(Constantes.TURNO, "\n>>> Es tu turno shavalon <<< \n(Usa un comando de la lista)"));
@@ -152,10 +179,19 @@ public class Sala implements Serializable {
                 j.enviarMensaje(new Mensaje(Constantes.ESTADO, "\nEs el turno de: " + jugadorActivo.getNombreJugador()));
             }
         }
+        // Avisar a espectadores
+        if (espectadores != null) {
+             for (HiloCliente e : espectadores) {
+                 e.enviarMensaje(new Mensaje(Constantes.ESTADO, "Turno de: " + jugadorActivo.getNombreJugador()));
+             }
+        }
     }
 
     public void siguienteTurno() {
         if (!enJuego) return;
+        
+        if (verificarGanador()) return;
+
         int intentos = 0;
         do {
             turnoActual = (turnoActual + 1) % jugadores.size();
@@ -164,9 +200,40 @@ public class Sala implements Serializable {
 
         notificarTurno();
     }
+
+    // Lógica para detectar ganador
+    public boolean verificarGanador() {
+        if (!enJuego) return false;
+
+        int vivos = 0;
+        HiloCliente posibleGanador = null;
+
+        for (HiloCliente j : jugadores) {
+            if (j.isEstaVivo()) {
+                vivos++;
+                posibleGanador = j;
+            }
+        }
+
+        if (vivos == 1 && posibleGanador != null) {
+            this.enJuego = false;
+            String msjGanador = "\n🏆 ¡PARTIDA FINALIZADA! 🏆\n" +
+                                "GANADOR: " + posibleGanador.getNombreJugador() + "\n";
+            broadcastSala(new Mensaje(Constantes.ESTADO, msjGanador));
+            
+            // Actualizar BD
+            BaseDatos.incrementarVictoria(posibleGanador.getNombreJugador());
+            
+            broadcastSala(new Mensaje(Constantes.ESTADO, "La sala vuelve al lobby. Usen /iniciar para jugar de nuevo o /salir_sala."));
+            return true;
+        }
+        return false;
+    }
+
     public boolean esTurnoDe(HiloCliente jugador) {
         return enJuego && jugadores.get(turnoActual).equals(jugador);
     }
+    
     //metodos para el embajador
     public String tomarCartaDelMazo() {
         if (mazo.isEmpty()) return null;
@@ -219,6 +286,8 @@ public class Sala implements Serializable {
 
     @Override
     public String toString() {
-        return "Sala #" + id + " de " + nombreAdmin + " [" + (jugadores != null ? jugadores.size() : 0) + "/" + capacidadMaxima + "]";
+        int nJugadores = (jugadores != null ? jugadores.size() : 0);
+        int nEspectadores = (espectadores != null ? espectadores.size() : 0);
+        return "Sala #" + id + " de " + nombreAdmin + " [" + nJugadores + "/" + capacidadMaxima + "] (👁️ " + nEspectadores + ")";
     }
 }
