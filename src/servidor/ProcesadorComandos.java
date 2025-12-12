@@ -33,6 +33,10 @@ public class ProcesadorComandos {
             case "/salir": manejarSalir(); break;
             case "/salir_sala": manejarSalirDeSalaAlLobby(); break;
             case "/iniciar": manejarIniciarPartida(); break;
+            
+            // NUEVOS COMANDOS
+            case "/ranking": manejarRanking(); break;
+            case "/espectar": manejarEspectar(partes); break;
 
             // --- ACCIONES DIRECTAS (No desafiables) ---
             case "/tomar_moneda": tomarUnaMoneda(); break;
@@ -59,6 +63,34 @@ public class ProcesadorComandos {
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido."));
         }
     }
+
+   
+    
+    private void manejarRanking() {
+        String ranking = BaseDatos.obtenerRanking();
+        cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, ranking));
+    }
+
+    private void manejarEspectar(String[] p) {
+        if (!cliente.isAutenticado() || cliente.getSalaActual() != null || p.length < 2) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /espectar <id_sala> (Debes estar logueado y sin sala)."));
+            return;
+        }
+        try {
+            Sala s = GestorSalas.getInstancia().buscarSala(Integer.parseInt(p[1]));
+            if (s != null) {
+                s.agregarEspectador(cliente);
+                cliente.setSalaActual(s);
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Observando sala #" + s.getId()));
+            } else {
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Sala no encontrada."));
+            }
+        } catch (NumberFormatException e) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "ID inválido."));
+        }
+    }
+
+    
 
     private void anunciarDuque() {
         if (!verificarTurno()) return;
@@ -95,8 +127,10 @@ public class ProcesadorComandos {
                         msgGeneral + "\n   (Esperando: /desafiar o /continuar)"));
             }
         }
+        // Avisar espectadores
+        sala.broadcastSala(new Mensaje(Constantes.ACCION, "(Espectador) Robo iniciado..."));
     }
-//solo aparece el mensaje a las victimas
+
     private void anunciarAsesinato(String[] partes) {
         if (!verificarTurno()) return;
         if (cliente.getMonedas() < 3) {
@@ -160,7 +194,6 @@ public class ProcesadorComandos {
             return;
         }
 
-        // FIX: El atacante NO puede validarse a sí mismo
         if (sala.getJugadorAtacante().equals(cliente)) {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "✋ Tú eres el atacante. Espera a que los demás confirmen."));
             return;
@@ -203,7 +236,7 @@ public class ProcesadorComandos {
             aplicarCastigo(acusado, sala);
             if (accion.equals("BLOQUEO_CONDESA")) {
                 sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> ¡NO ERA CONDESA! El bloqueo falla."));
-                aplicarCastigo(acusado, sala);
+                aplicarCastigo(acusado, sala); // Doble castigo si bloqueas sin condesa y te desafian (muerte del asesinato + mentira)
                 sala.siguienteTurno();
             } else {
                 sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> La acción ha sido CANCELADA."));
@@ -216,7 +249,6 @@ public class ProcesadorComandos {
     }
 
     //   EJECUCIÓN REAL (Post-Validación)
-
 
     private void ejecutarAccionPendiente(Sala sala) {
         String accion = sala.getAccionPendiente();
@@ -254,7 +286,6 @@ public class ProcesadorComandos {
             case "ASESINAR":
                 sala.setEsperandoBloqueo(true);
                 HiloCliente target = sala.getJugadorObjetivo();
-                HiloCliente attacker = sala.getJugadorAtacante();
                 target.enviarMensaje(new Mensaje(Constantes.ACCION,
                         "¿Tienes a la Condesa?\n/bloquear (si tienes Condesa) o /aceptar"));
                 for (HiloCliente j : sala.getJugadores()) {
@@ -288,9 +319,7 @@ public class ProcesadorComandos {
         }
     }
 
-
     //  OTRAS MECÁNICAS DE JUEGO
-
 
     private void tomarUnaMoneda() {
         if (!verificarTurno()) return;
@@ -406,6 +435,7 @@ public class ProcesadorComandos {
         limpiarEstadoAsesinato(sala);
         sala.siguienteTurno();
     }
+
     private void aplicarCastigo(HiloCliente perdedor, Sala sala) {
         if (perdedor.getCartasEnMano().isEmpty()) return;
         String cartaPerdida = perdedor.getCartasEnMano().get(0);
@@ -418,6 +448,8 @@ public class ProcesadorComandos {
             sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> JUGADOR ELIMINADO: " + perdedor.getNombreJugador()));
         }
         enviarEstadoActualizado(perdedor);
+        
+        // LA SALA VERIFICARÁ SI HAY UN GANADOR DESPUÉS DE ESTO AUTOMÁTICAMENTE
     }
 
     private boolean bloquearPorRestricciones(String comando) {
@@ -440,6 +472,13 @@ public class ProcesadorComandos {
     private boolean verificarTurno() {
         Sala sala = cliente.getSalaActual();
         if (sala == null || !sala.isEnJuego()) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No hay partida activa.")); return false; }
+        
+        //  Si soy espectador, NO puedo jugar
+        if (!sala.getJugadores().contains(cliente)) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Solo eres un espectador. Shhh."));
+            return false;
+        }
+
         if (!sala.esTurnoDe(cliente)) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "¡No es tu turno!")); return false; }
         if (sala.isEsperandoDesafio() || sala.isEsperandoBloqueo()) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Hay una acción pendiente. Espera.")); return false; }
         return true;
@@ -464,7 +503,6 @@ public class ProcesadorComandos {
             j.enviarMensaje(new Mensaje(Constantes.ESTADO, "TUS DATOS | Monedas: " + j.getMonedas() + " | Cartas: " + j.getCartasEnMano()));
         }
     }
-
 
     // GESTIÓN DE SALA Y LOBBY
 
@@ -521,7 +559,12 @@ public class ProcesadorComandos {
     private void manejarSalirDeSalaAlLobby() {
         if (cliente.getSalaActual() != null) {
             cliente.getSalaActual().removerJugador(cliente);
+            if (cliente.getSalaActual().getJugadores().isEmpty() && (cliente.getSalaActual().getJugadores() == null /* check simple */)) {
+                // Solo eliminar si no quedan jugadores REALES. Espectadores no cuentan.
+            }
+             // Limpieza simple
             if (cliente.getSalaActual().getJugadores().isEmpty()) GestorSalas.getInstancia().eliminarSala(cliente.getSalaActual());
+            
             cliente.setSalaActual(null);
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Saliste de la sala."));
             mostrarMenuPrincipal();
@@ -541,7 +584,7 @@ public class ProcesadorComandos {
 
     private void mostrarMenuPrincipal() {
         if (cliente.getSalaActual() == null) {
-            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "\n=== MENU ===\n/crear <2-6>\n/unir <id>\n/lista\n/salir"));
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "\n=== MENU ===\n/crear <2-6>\n/unir <id>\n/espectar <id>\n/ranking\n/lista\n/salir"));
         } else {
             cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "\n=== EN SALA ===\n/iniciar\n/salir_sala"));
         }
