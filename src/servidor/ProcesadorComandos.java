@@ -194,6 +194,22 @@ public class ProcesadorComandos {
 
         if (tieneLaCarta) {
             aplicarCastigo(retador, sala);
+
+            if (!retador.isEstaVivo()) {
+                sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> El jugador " + retador.getNombreJugador() + " murió tras fallar el desafío."));
+
+                acusado.perderCarta(cartaReclamada);
+                sala.devolverCartaAlMazo(cartaReclamada);
+                String nueva = sala.tomarCartaDelMazo();
+                acusado.agregarCarta(nueva);
+                acusado.enviarMensaje(new Mensaje(Constantes.ESTADO, "Carta cambiada. Nueva: " + nueva));
+
+                limpiarEstadoAsesinato(sala);
+                sala.limpiarEstadoDesafio();
+                sala.siguienteTurno();
+                return;
+            }
+
             acusado.perderCarta(cartaReclamada);
             sala.devolverCartaAlMazo(cartaReclamada);
             String nueva = sala.tomarCartaDelMazo();
@@ -210,6 +226,7 @@ public class ProcesadorComandos {
                     limpiarEstadoAsesinato(sala);
                 }
             }
+
         } else {
             aplicarCastigo(acusado, sala);
 
@@ -218,7 +235,7 @@ public class ProcesadorComandos {
                 aplicarCastigo(acusado, sala);
                 sala.siguienteTurno();
             } else {
-                sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> La accion ha sido CANCELADA por mentiroso."));
+                sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> La acción ha sido CANCELADA por mentiroso."));
                 sala.siguienteTurno();
             }
             limpiarEstadoAsesinato(sala);
