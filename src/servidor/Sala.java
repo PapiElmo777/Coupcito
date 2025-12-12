@@ -19,8 +19,9 @@ public class Sala implements Serializable {
     private String nombreAdmin;
     private boolean esperandoDesafio = false; 
     private String cartaRequerida = null;    
-    private String accionPendiente = null;   
-   
+    private String accionPendiente = null;
+
+    private List<String> listaInvitados;
     private transient List<HiloCliente> jugadores; 
     private transient List<String> mazo;
     private int turnoActual = 0;
@@ -45,6 +46,7 @@ public class Sala implements Serializable {
         this.accionPendiente = null;
         
     }
+
     public Sala(HiloCliente creador, int capacidad, boolean privada) {
         this.id = contadorIds++;
         this.capacidadMaxima = capacidad;
@@ -54,9 +56,21 @@ public class Sala implements Serializable {
         this.jugadores.add(creador); 
         this.enJuego = false;
         this.mazo = new ArrayList<String>();
+        this.listaInvitados = new ArrayList<>();
+        this.listaInvitados.add(creador.getNombreJugador());
     }
 
-   
+    public void agregarInvitado(String nombreJugador) {
+        if (!listaInvitados.contains(nombreJugador)) {
+            listaInvitados.add(nombreJugador);
+        }
+    }
+    public boolean esInvitado(String nombreJugador) {
+        return !esPrivada || listaInvitados.contains(nombreJugador);
+    }
+    public boolean esAdmin(String nombreJugador) {
+        return this.nombreAdmin.equals(nombreJugador);
+    }
     public boolean agregarJugador(HiloCliente jugador) {
         if (jugadores.size() < capacidadMaxima && !enJuego) {
             jugadores.add(jugador);
