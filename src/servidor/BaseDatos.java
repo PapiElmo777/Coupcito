@@ -50,4 +50,14 @@ public class BaseDatos {
         }
         return false;
     }
+    public static synchronized void sumarVictoria(String usuario) {
+        String sql = "UPDATE usuarios SET victorias = victorias + 1 WHERE nombre = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, usuario);
+            pstmt.executeUpdate();
+            System.out.println(">> Victoria registrada para: " + usuario);
+        } catch (SQLException e) {
+            System.out.println(">> Error al sumar victoria: " + e.getMessage());
+        }
+    }
 }
