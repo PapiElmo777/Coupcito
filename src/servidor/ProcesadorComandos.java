@@ -1,5 +1,5 @@
 package servidor;
-
+import servidor.Sala;
 import comun.Constantes;
 import comun.Mensaje;
 import java.util.ArrayList;
@@ -436,22 +436,24 @@ public class ProcesadorComandos {
     }
     private void aplicarCastigo(HiloCliente perdedor, Sala sala) {
         if (perdedor.getCartasEnMano().isEmpty()) return;
+
         String cartaPerdida = perdedor.getCartasEnMano().get(0);
         perdedor.perderCarta(cartaPerdida);
         sala.devolverCartaAlMazo(cartaPerdida);
 
         sala.broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + perdedor.getNombreJugador() + " pierde una vida (" + cartaPerdida + ")."));
+
         if (!perdedor.isEstaVivo()) {
             String msgMuerte = "\n" +
                     "****************************************\n" +
-                    "   JUGADOR " + perdedor.getNombreJugador() +  " ELIMINADO"+"\n" +
+                    "   JUGADOR ELIMINADO: " + perdedor.getNombreJugador() + "\n" +
                     "****************************************\n";
             sala.broadcastSala(new Mensaje(Constantes.ESTADO, msgMuerte));
-
             perdedor.enviarMensaje(new Mensaje(Constantes.ESTADO, "Has sido eliminado. Ahora eres espectador."));
         }
 
         enviarEstadoActualizado(perdedor);
+        sala.verificarGanador();
     }
 
     private boolean bloquearPorRestricciones(String comando) {

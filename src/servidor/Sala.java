@@ -83,7 +83,25 @@ public class Sala implements Serializable {
         }
     }
 
-    private void verificarGanador() {
+    void verificarGanador() {
+        if (!enJuego) return;
+        List<HiloCliente> vivos = new ArrayList<>();
+        for (HiloCliente j : jugadores) {
+            if (j.isEstaVivo()) {
+                vivos.add(j);
+            }
+        }
+        if (vivos.size() == 1) {
+            HiloCliente ganador = vivos.get(0);
+            String mensajeVictoria = "\n" +
+                    "********************************************\n" +
+                    "   ¡VICTORIA PARA!: " + ganador.getNombreJugador() + "\n" +
+                    "********************************************\n";
+
+            broadcastSala(new Mensaje(Constantes.ESTADO, mensajeVictoria));
+            BaseDatos.sumarVictoria(ganador.getNombreJugador());
+            broadcastSala(new Mensaje(Constantes.ESTADO, "La partida ha finalizado. Usen /iniciar para jugar de nuevo."));
+        }
     }
 
     public void broadcastSala(Mensaje msj) {
