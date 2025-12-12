@@ -33,6 +33,7 @@ public class ProcesadorComandos {
             case "/salir": manejarSalir(); break;
             case "/salir_sala": manejarSalirDeSalaAlLobby(); break;
             case "/iniciar": manejarIniciarPartida(); break;
+            case "/invitar": manejarInvitar(partes); break;
 
             // --- ACCIONES DIRECTAS (No desafiables) ---
             case "/tomar_moneda": tomarUnaMoneda(); break;
@@ -58,6 +59,41 @@ public class ProcesadorComandos {
             default:
                 cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Comando desconocido."));
         }
+    }
+
+    private void manejarInvitar(String[] partes) {
+        if (!cliente.isAutenticado()) return;
+
+        Sala sala = cliente.getSalaActual();
+        if (sala == null) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No estás en ninguna sala."));
+            return;
+        }
+        if (!sala.esAdmin(cliente.getNombreJugador())) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Solo el administrador de la sala puede invitar."));
+            return;
+        }
+
+        if (partes.length < 2) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /invitar <usuario>"));
+            return;
+        }
+        String nombreInvitado = partes[1];
+        HiloCliente invitado = ServidorCoup.buscarClientePorNombre(nombreInvitado);
+        if (invitado == null) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "El usuario " + nombreInvitado + " no está conectado."));
+            return;
+        }
+        if (invitado.getSalaActual() != null) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "El usuario ya está en otra partida."));
+            return;
+        }
+        sala.agregarInvitado(nombreInvitado);
+        cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Has invitado a " + nombreInvitado));
+        invitado.enviarMensaje(new Mensaje(Constantes.ESTADO,
+                "*** INVITACIÓN ***\n" +
+                        cliente.getNombreJugador() + " te ha invitado a su sala privada (ID: " + sala.getId() + ").\n" +
+                        "Usa: /unir " + sala.getId() + " para entrar."));
     }
 
     private void anunciarDuque() {
