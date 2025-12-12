@@ -66,9 +66,24 @@ public class Sala implements Serializable {
     }
 
     public void removerJugador(HiloCliente jugador) {
-        if (jugadores != null) {
-            jugadores.remove(jugador);
+        if (jugadores == null) return;
+        if (enJuego && jugador.isEstaVivo()) {
+            broadcastSala(new Mensaje(Constantes.ESTADO, ">> " + jugador.getNombreJugador() + " abandonó la partida y ha sido ELIMINADO."));
+            for (String c : jugador.getCartasEnMano()) {
+                devolverCartaAlMazo(c);
+            }
+            jugador.getCartasEnMano().clear();
         }
+        jugadores.remove(jugador);
+        if (enJuego) {
+            verificarGanador();
+            if (jugadores.isEmpty()) {
+                enJuego = false;
+            }
+        }
+    }
+
+    private void verificarGanador() {
     }
 
     public void broadcastSala(Mensaje msj) {
