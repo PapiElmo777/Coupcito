@@ -339,13 +339,24 @@ public class ProcesadorComandos {
                 HiloCliente embajador = sala.getJugadorAtacante();
                 String c1 = sala.tomarCartaDelMazo();
                 String c2 = sala.tomarCartaDelMazo();
+
                 if (c1 != null && c2 != null) {
                     embajador.agregarCarta(c1);
                     embajador.agregarCarta(c2);
+                    int aConservar = embajador.getCartasEnMano().size() - 2;
+
                     StringBuilder sb = new StringBuilder();
                     sb.append("--- INTERCAMBIO DE EMBAJADOR ---\n");
-                    sb.append("Has tomado: ").append(c1).append(" y ").append(c2).append("\n");
-                    sb.append("Usa: /seleccionar <carta1> [carta2] para quedarte con ellas.");
+                    sb.append("Has tomado del mazo: ").append(c1).append(" y ").append(c2).append("\n");
+                    sb.append("------------------------------------------------\n");
+                    sb.append("TU MANO COMBINADA: ").append(embajador.getCartasEnMano()).append("\n");
+                    sb.append("------------------------------------------------\n");
+                    sb.append("DEBES DEVOLVER 2 CARTAS (Te quedas con ").append(aConservar).append(").\n");
+                    if (aConservar == 1) {
+                        sb.append("Usa: /seleccionar <carta_que_te_quedas>");
+                    } else {
+                        sb.append("Usa: /seleccionar <carta1> <carta2>");
+                    }
                     embajador.enviarMensaje(new Mensaje(Constantes.ESTADO, sb.toString()));
                 }
                 break;
