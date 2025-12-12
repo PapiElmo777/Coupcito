@@ -583,16 +583,42 @@ public class ProcesadorComandos {
         mostrarMenuPrincipal();
     }
 
-    private void manejarUnirse(String[] p) {
-        if (!cliente.isAutenticado() || cliente.getSalaActual() != null || p.length < 2) return;
+    private void manejarUnirse(String[] partes) {
+        if (!cliente.isAutenticado()) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Debes iniciar sesión primero."));
+            return;
+        }
+        if (cliente.getSalaActual() != null) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Ya estás en una sala."));
+            return;
+        }
+        if (partes.length < 2) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Uso: /unir <id_sala>"));
+            return;
+        }
+
         try {
-            Sala s = GestorSalas.getInstancia().buscarSala(Integer.parseInt(p[1]));
-            if (s != null && !s.isEsPrivada() && s.agregarJugador(cliente)) {
+            int idSala = Integer.parseInt(partes[1]);
+            Sala s = GestorSalas.getInstancia().buscarSala(idSala);
+
+            if (s == null) {
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Sala no encontrada."));
+                return;
+            }
+            if (!s.esInvitado(cliente.getNombreJugador())) {
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Esta sala es PRIVADA y no has sido invitado."));
+                return;
+            }
+            if (s.agregarJugador(cliente)) {
                 cliente.setSalaActual(s);
-                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Unido a sala " + s.getId()));
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "Te has unido a la sala #" + s.getId()));
                 mostrarMenuPrincipal();
-            } else cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No se pudo unir."));
-        } catch (Exception e) { cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "ID inválido.")); }
+            } else {
+                cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "No puedes unirte (Sala llena o en juego)."));
+            }
+        } catch (NumberFormatException e) {
+            cliente.enviarMensaje(new Mensaje(Constantes.ESTADO, "El ID debe ser un número."));
+        }
     }
 
     private void manejarListarSalas() {
